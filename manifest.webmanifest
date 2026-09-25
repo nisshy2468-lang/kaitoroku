@@ -1,0 +1,17 @@
+{
+  "name": "回数台帳｜回数券・セット契約の残数管理",
+  "short_name": "回数台帳",
+  "description": "回数券やセット契約の残り回数を来店ごとに管理する無料アプリ",
+  "lang": "ja",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#191512",
+  "theme_color": "#191512",
+  "icons": [
+    {"src": "./icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any"},
+    {"src": "./icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any"},
+    {"src": "./icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable"}
+  ]
+}

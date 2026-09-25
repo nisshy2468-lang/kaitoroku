@@ -1,0 +1,1526 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#191512">
+<title>回数台帳｜回数券・セット契約の残数管理</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ccircle cx='32' cy='32' r='30' fill='%23b4442c'/%3E%3Ctext x='32' y='45' font-size='38' font-family='serif' font-weight='700' text-anchor='middle' fill='%23fbf3e4'%3E%E6%AE%8B%3C/text%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho+B1:wght@600;700;800&family=Zen+Kaku+Gothic+New:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ink:#191512;
+  --ink-2:#241e19;
+  --paper:#f2e9da;
+  --paper-2:#e6dac4;
+  --paper-3:#d9c9ad;
+  --sumi:#2a231c;
+  --sumi-2:#5b5148;
+  --mute:#94897a;
+  --brass:#c9a24d;
+  --brass-2:#e0bd6d;
+  --vermilion:#b4442c;
+  --r-lg:18px;
+  --r-md:12px;
+  --r-sm:8px;
+  --shadow:0 1px 0 rgba(255,255,255,.4) inset, 0 10px 24px -12px rgba(0,0,0,.65);
+  --font-d:"Shippori Mincho B1","Hiragino Mincho ProN","Yu Mincho",serif;
+  --font-b:"Zen Kaku Gothic New","Hiragino Kaku Gothic ProN","Yu Gothic",system-ui,sans-serif;
+  --font-m:"IBM Plex Mono",ui-monospace,"SFMono-Regular",monospace;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{
+  margin:0;
+  font-family:var(--font-b);
+  color:var(--paper);
+  background:
+    radial-gradient(120% 80% at 50% -10%, #2c241d 0%, rgba(0,0,0,0) 55%),
+    radial-gradient(60% 40% at 100% 100%, rgba(201,162,77,.10) 0%, rgba(0,0,0,0) 70%),
+    var(--ink);
+  min-height:100vh;
+  padding-bottom:calc(84px + env(safe-area-inset-bottom));
+  -webkit-font-smoothing:antialiased;
+}
+.app{max-width:460px;margin:0 auto;padding:0 14px}
+
+/* ---------- masthead ---------- */
+.mast{
+  position:sticky;top:0;z-index:30;
+  display:flex;align-items:center;justify-content:space-between;gap:10px;
+  padding:calc(14px + env(safe-area-inset-top)) 2px 12px;
+  background:linear-gradient(180deg,rgba(25,21,18,.97) 62%,rgba(25,21,18,0));
+  backdrop-filter:blur(6px);
+}
+.mast__brand{display:flex;align-items:center;gap:10px;min-width:0}
+.seal{
+  width:40px;height:40px;flex:0 0 40px;border-radius:50%;
+  display:grid;place-items:center;
+  font-family:var(--font-d);font-weight:800;font-size:19px;
+  color:#fbf3e4;background:var(--vermilion);
+  box-shadow:0 0 0 2px rgba(180,68,44,.35), 0 6px 14px -6px #000;
+}
+.mast h1{
+  margin:0;font-family:var(--font-d);font-weight:700;font-size:19px;letter-spacing:.06em;
+  color:#fbf3e4;line-height:1.15;
+}
+.mast__sub{margin:2px 0 0;font-size:10.5px;letter-spacing:.14em;color:var(--mute);text-transform:uppercase}
+.mast__stat{text-align:right;flex:0 0 auto}
+.mast__num{font-family:var(--font-m);font-size:27px;font-weight:600;color:var(--brass-2);line-height:1}
+.mast__cap{display:block;font-size:10px;letter-spacing:.16em;color:var(--mute);margin-top:3px}
+
+/* ---------- notice ---------- */
+.notice{
+  display:none;gap:8px;align-items:flex-start;
+  margin:2px 0 12px;padding:10px 12px;border-radius:var(--r-sm);
+  background:rgba(180,68,44,.14);border:1px solid rgba(180,68,44,.45);
+  font-size:12px;line-height:1.6;color:#f0d9d2;
+}
+.notice.is-on{display:flex}
+
+/* ---------- summary ---------- */
+.summary{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:4px 0 16px}
+.summary__cell{
+  border:1px solid rgba(201,162,77,.26);border-radius:var(--r-md);
+  padding:11px 11px 10px;background:rgba(255,255,255,.035);
+}
+.summary__cell--wide{grid-column:1/-1;display:flex;align-items:baseline;justify-content:space-between}
+.summary__k{font-size:10.5px;letter-spacing:.1em;color:var(--mute);display:block;margin-bottom:5px}
+.summary__v{font-family:var(--font-m);font-size:21px;font-weight:600;color:#fbf3e4;line-height:1}
+.summary__v small{font-family:var(--font-b);font-size:10px;font-weight:500;color:var(--mute);margin-left:2px}
+.summary__cell--wide .summary__v{font-size:15px;font-family:var(--font-b);font-weight:500;color:var(--paper)}
+
+/* ---------- section head ---------- */
+.head{display:flex;align-items:flex-end;justify-content:space-between;gap:10px;margin:22px 2px 10px}
+.head h2{margin:0;font-family:var(--font-d);font-size:14.5px;font-weight:600;letter-spacing:.1em;color:#f0e5d3}
+.head h2 span{color:var(--mute);font-size:11px;letter-spacing:.04em;margin-left:7px;font-family:var(--font-b)}
+
+/* ---------- ticket ---------- */
+.ticket{
+  position:relative;display:flex;margin-bottom:12px;
+  border-radius:var(--r-lg);overflow:hidden;
+  background:linear-gradient(168deg,var(--paper) 0%,var(--paper-2) 100%);
+  color:var(--sumi);
+  box-shadow:var(--shadow);
+}
+.ticket::after{
+  content:"";position:absolute;inset:0;pointer-events:none;border-radius:var(--r-lg);
+  background-image:repeating-linear-gradient(0deg,rgba(120,100,70,.05) 0 1px,transparent 1px 4px);
+  opacity:.55;mix-blend-mode:multiply;
+}
+.ticket.is-done{filter:saturate(.4);opacity:.62}
+.ticket__stub{
+  flex:0 0 74px;padding:13px 8px 12px;text-align:center;
+  background:linear-gradient(180deg,rgba(201,162,77,.20),rgba(201,162,77,.07));
+  border-right:1px dashed rgba(42,35,28,.42);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;
+}
+.ticket__stub::before,.ticket__stub::after{
+  content:"";position:absolute;width:12px;height:12px;border-radius:50%;
+  background:var(--ink);left:68px;
+}
+.ticket__stub::before{top:-6px}
+.ticket__stub::after{bottom:-6px}
+.stub__no{font-family:var(--font-m);font-size:9.5px;letter-spacing:.08em;color:var(--sumi-2)}
+.stub__remain{font-family:var(--font-m);font-size:30px;font-weight:600;line-height:1;color:var(--sumi)}
+.stub__unit{font-size:10px;color:var(--sumi-2);letter-spacing:.08em}
+.ticket__body{flex:1 1 auto;min-width:0;padding:13px 13px 12px}
+.ticket__top{display:flex;align-items:flex-start;gap:8px;justify-content:space-between}
+.ticket__name{margin:0;font-family:var(--font-d);font-size:15.5px;font-weight:700;line-height:1.3;word-break:break-word}
+.ticket__kind{
+  font-family:var(--font-m);font-size:9px;letter-spacing:.1em;
+  border:1px solid rgba(42,35,28,.4);border-radius:3px;padding:2px 5px;color:var(--sumi-2);flex:0 0 auto;
+}
+.ticket__kind--pack{border-color:rgba(180,68,44,.6);color:var(--vermilion)}
+.chips{display:flex;flex-wrap:wrap;gap:5px;margin-top:7px}
+.chip{font-size:10.5px;font-weight:700;letter-spacing:.05em;padding:2.5px 7px;border-radius:99px;border:1px solid currentColor}
+.chip--warn{color:var(--vermilion);background:rgba(180,68,44,.09)}
+.chip--exp{color:#8a5a1f;background:rgba(138,90,31,.1)}
+.chip--done{color:var(--sumi-2);background:rgba(42,35,28,.08)}
+.ticket__meta{margin:9px 0 0;font-family:var(--font-m);font-size:10.5px;line-height:1.7;color:var(--sumi-2)}
+.ticket__note{margin:5px 0 0;font-size:11.5px;line-height:1.6;color:var(--sumi-2);word-break:break-word}
+.punches{display:flex;flex-wrap:wrap;gap:6px;margin-top:11px}
+.punch{width:15px;height:15px;border-radius:50%;border:1.5px solid rgba(42,35,28,.45);background:rgba(255,255,255,.45)}
+.punch--used{background:#231d18;border-color:#231d18;box-shadow:inset 0 2px 2px rgba(0,0,0,.75), 0 1px 0 rgba(255,255,255,.5)}
+.bar{height:8px;border-radius:99px;background:rgba(42,35,28,.16);overflow:hidden;margin-top:11px}
+.bar__fill{height:100%;background:linear-gradient(90deg,#6b5a3f,#231d18);border-radius:99px}
+.bar__cap{font-family:var(--font-m);font-size:10px;color:var(--sumi-2);margin-top:5px;display:block}
+.ticket__acts{display:flex;gap:7px;margin-top:12px;flex-wrap:wrap}
+.btn-xs{
+  font-family:var(--font-b);font-size:12px;font-weight:700;letter-spacing:.04em;
+  padding:7px 12px;border-radius:99px;border:1.5px solid rgba(42,35,28,.55);
+  background:transparent;color:var(--sumi);cursor:pointer;
+}
+.btn-xs--fill{background:var(--sumi);border-color:var(--sumi);color:#f7efe0}
+.btn-xs--brass{background:linear-gradient(180deg,var(--brass-2),var(--brass));border-color:var(--brass);color:#2a2010}
+.btn-xs:hover{background:rgba(42,35,28,.08)}
+.btn-xs--fill:hover{background:#160f0b}
+.btn-xs--brass:hover{background:var(--brass-2)}
+
+/* ---------- empty ---------- */
+.empty{border:1.5px dashed rgba(201,162,77,.4);border-radius:var(--r-lg);padding:28px 18px;text-align:center;color:var(--mute)}
+.empty h3{margin:0 0 8px;font-family:var(--font-d);font-size:15px;color:#ecdfc9;letter-spacing:.05em}
+.empty p{margin:0;font-size:12.5px;line-height:1.75}
+
+/* ---------- set (pack) ---------- */
+.pack{border:1px solid rgba(201,162,77,.3);border-radius:var(--r-md);background:rgba(201,162,77,.06);padding:12px;margin-bottom:10px}
+.pack.is-done{opacity:.55}
+.pack__top{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
+.pack__name{font-family:var(--font-d);font-size:14.5px;font-weight:700;color:#fbf3e4;line-height:1.35;word-break:break-word}
+.pack__meta{font-family:var(--font-m);font-size:10.5px;color:var(--mute);margin-top:4px;line-height:1.65}
+.pack__meta b{color:var(--vermilion)}
+.pack__cost{font-family:var(--font-m);font-size:11px;color:var(--brass-2);text-align:right;flex:0 0 auto;line-height:1.5}
+.pack__cost b{font-size:17px;color:#fbf3e4}
+.pack__opts{display:flex;flex-wrap:wrap;gap:6px;margin-top:11px}
+.opt{
+  font-family:var(--font-b);font-size:12.5px;font-weight:700;letter-spacing:.02em;
+  padding:8px 11px;border-radius:99px;cursor:pointer;
+  border:1.5px solid rgba(201,162,77,.5);background:transparent;color:var(--paper);
+}
+.opt.is-on{background:var(--brass);border-color:var(--brass);color:#241d10}
+.opt:hover{background:rgba(201,162,77,.16)}
+.opt.is-on:hover{background:var(--brass-2)}
+
+/* ---------- forms ---------- */
+.field{margin-bottom:14px}
+.field > label{display:block;font-size:11.5px;letter-spacing:.1em;color:var(--mute);margin-bottom:7px}
+input[type=text],input[type=number],input[type=date],textarea,select{
+  width:100%;font-family:var(--font-b);font-size:15px;color:var(--ink);
+  background:var(--paper);border:1.5px solid var(--paper-3);border-radius:var(--r-sm);
+  padding:11px 12px;appearance:none;
+}
+textarea{min-height:74px;resize:vertical;line-height:1.6}
+input:focus,textarea:focus,select:focus,button:focus-visible,a:focus-visible{outline:2.5px solid var(--brass);outline-offset:2px}
+.seg{display:flex;gap:7px}
+.seg button{
+  flex:1;font-family:var(--font-b);font-size:13px;font-weight:700;padding:11px 6px;
+  border-radius:var(--r-sm);border:1.5px solid rgba(201,162,77,.45);
+  background:rgba(255,255,255,.04);color:var(--paper);cursor:pointer;
+}
+.seg button[aria-pressed=true]{background:var(--brass);border-color:var(--brass);color:#241d10}
+.hint{font-size:11px;color:var(--mute);line-height:1.65;margin:7px 0 0}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+
+/* ---------- record rows ---------- */
+.pick{display:flex;align-items:center;gap:10px;background:var(--paper);color:var(--sumi);border-radius:var(--r-md);padding:11px 12px;margin-bottom:8px}
+.pick__info{flex:1 1 auto;min-width:0}
+.pick__name{font-size:13.5px;font-weight:700;line-height:1.35;word-break:break-word}
+.pick__meta{font-family:var(--font-m);font-size:10.5px;color:var(--sumi-2);margin-top:3px}
+.pick__meta b{color:var(--vermilion)}
+.stepper{display:flex;align-items:center;gap:2px;flex:0 0 auto}
+.stepper button{
+  width:34px;height:34px;border-radius:50%;border:1.5px solid rgba(42,35,28,.4);
+  background:transparent;color:var(--sumi);font-size:18px;line-height:1;cursor:pointer;font-family:var(--font-b);
+}
+.stepper button:hover:not(:disabled){background:rgba(42,35,28,.08)}
+.stepper button:disabled{opacity:.3;cursor:default}
+.stepper__v{font-family:var(--font-m);font-size:16px;font-weight:600;min-width:26px;text-align:center}
+.pick.is-done{opacity:.5}
+.pick.is-done .pick__name::after{content:" 使い切り";font-size:10.5px;color:var(--sumi-2);font-weight:500}
+
+/* ---------- preview + save ---------- */
+.preview{border:1.5px solid rgba(201,162,77,.45);border-radius:var(--r-md);padding:12px 13px;background:rgba(201,162,77,.07);margin:14px 0}
+.preview__k{font-size:10.5px;letter-spacing:.12em;color:var(--brass-2);margin:0 0 7px}
+.preview ul{margin:0;padding:0;list-style:none;font-size:12.5px;line-height:1.8;color:#ece1cd}
+.preview li{display:flex;justify-content:space-between;gap:10px;font-family:var(--font-m);padding:3px 0}
+.preview li + li{border-top:1px solid rgba(201,162,77,.18);margin-top:3px;padding-top:6px}
+.preview li span:last-child{color:var(--brass-2);flex:0 0 auto}
+.preview__sel{display:block;font-style:normal;font-size:11px;color:var(--mute);margin-top:3px;line-height:1.6}
+.btn{
+  width:100%;font-family:var(--font-b);font-size:15px;font-weight:700;letter-spacing:.05em;
+  padding:15px;border-radius:99px;border:0;cursor:pointer;
+  background:linear-gradient(180deg,var(--brass-2),var(--brass));color:#2a2010;
+  box-shadow:0 8px 18px -10px rgba(201,162,77,.9);
+}
+.btn:disabled{opacity:.4;cursor:default;box-shadow:none}
+.btn--ghost{background:transparent;color:var(--paper);border:1.5px solid rgba(201,162,77,.5);box-shadow:none}
+.btn--danger{background:transparent;color:#eab5a5;border:1.5px solid rgba(180,68,44,.7);box-shadow:none}
+
+/* ---------- history ---------- */
+.log{border-left:2px solid rgba(201,162,77,.4);padding:0 0 16px 14px;margin-left:5px;position:relative}
+.log::before{content:"";position:absolute;left:-7px;top:4px;width:12px;height:12px;border-radius:50%;background:var(--ink);border:2px solid var(--brass)}
+.log__date{font-family:var(--font-m);font-size:12px;color:var(--brass-2);letter-spacing:.04em}
+.log__items{margin:7px 0 0;padding:0;list-style:none;font-size:13px;line-height:1.75}
+.log__items li::before{content:"▸ ";color:var(--mute)}
+.log__sel{display:block;font-size:11.5px;color:var(--mute);margin-left:14px}
+.log__note{margin:8px 0 0;font-size:12px;color:var(--mute);line-height:1.65;border-left:2px solid rgba(148,137,122,.35);padding-left:9px;word-break:break-word}
+.log__del{margin-top:9px;background:transparent;border:0;color:var(--mute);font-family:var(--font-b);font-size:11.5px;text-decoration:underline;cursor:pointer;padding:2px 0}
+.log__del:hover{color:#eab5a5}
+.ver{margin:26px 0 8px;text-align:center;font-family:var(--font-m);font-size:11px;letter-spacing:.06em;color:var(--mute);line-height:1.8}
+.ver b{color:var(--brass-2);font-weight:600}
+.summary--2{grid-template-columns:1fr 1fr}
+.an-row{display:flex;align-items:center;gap:10px;padding:7px 0;border-top:1px solid rgba(201,162,77,.14)}
+.an-row:first-child{border-top:0}
+.an-row__label{flex:0 0 88px;font-size:12px;color:var(--paper);line-height:1.4;word-break:break-word}
+.an-row__bar{flex:1 1 auto;height:9px;border-radius:99px;background:rgba(255,255,255,.10);overflow:hidden;min-width:40px}
+.an-row__fill{display:block;height:100%;border-radius:99px;background:linear-gradient(90deg,var(--brass),var(--brass-2))}
+.an-row__v{flex:0 0 auto;font-family:var(--font-m);font-size:11.5px;color:var(--brass-2)}
+.an-line{display:flex;justify-content:space-between;gap:10px;font-size:12.5px;line-height:1.8;border-top:1px solid rgba(201,162,77,.14);padding:5px 0}
+.an-line:first-child{border-top:0}
+.an-line b{font-family:var(--font-m);color:#fbf3e4}
+.an-note{font-size:11px;color:var(--mute);margin:9px 0 0;line-height:1.7}
+.an-warn{color:var(--vermilion);font-weight:700}
+.log__weight{display:inline-block;margin:9px 0 0;font-family:var(--font-m);font-size:11.5px;color:var(--sumi-2);background:rgba(255,255,255,.55);border-radius:99px;padding:3px 10px}
+.log__only{color:var(--mute)}
+.wcard{border:1px solid rgba(201,162,77,.3);border-radius:var(--r-md);background:rgba(255,255,255,.035);padding:13px;margin-bottom:16px}
+.wcard__k{font-size:10.5px;letter-spacing:.12em;color:var(--mute);display:block;margin-bottom:7px}
+.wcard__top{display:flex;align-items:flex-end;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.wcard__v{font-family:var(--font-m);font-size:30px;font-weight:600;color:#fbf3e4;line-height:1}
+.wcard__v small{font-family:var(--font-b);font-size:11px;color:var(--mute);margin-left:3px}
+.wcard__d{font-family:var(--font-m);font-size:11.5px;color:var(--brass-2);line-height:1.6;text-align:right}
+.wcard svg{display:block;width:100%;height:54px;margin-top:12px;overflow:visible}
+.wcard__list{margin:12px 0 0;padding:0;list-style:none;font-family:var(--font-m);font-size:11.5px;color:var(--paper);line-height:1.9}
+.wcard__list li{display:flex;justify-content:space-between;gap:10px;border-top:1px solid rgba(201,162,77,.14);padding:4px 0}
+.wcard__list li:first-child{border-top:0}
+.wcard__list li span:last-child{color:var(--brass-2)}
+
+/* ---------- settings ---------- */
+.card{border:1px solid rgba(201,162,77,.26);border-radius:var(--r-md);padding:14px;margin-bottom:12px;background:rgba(255,255,255,.03)}
+.card h3{margin:0 0 6px;font-family:var(--font-d);font-size:13.5px;letter-spacing:.07em;color:#f0e5d3}
+.card p{margin:0 0 11px;font-size:12px;line-height:1.7;color:var(--mute)}
+.card .stack{display:grid;gap:8px}
+.mono-box{
+  width:100%;font-family:var(--font-m);font-size:11px;line-height:1.6;min-height:96px;
+  background:#120f0c;color:#d9cbb2;border:1px solid rgba(201,162,77,.3);border-radius:var(--r-sm);padding:10px;resize:vertical;
+}
+
+/* ---------- tabbar ---------- */
+.tabbar{
+  position:fixed;left:0;right:0;bottom:0;z-index:40;
+  display:flex;justify-content:center;gap:2px;
+  padding:8px 8px calc(8px + env(safe-area-inset-bottom));
+  background:linear-gradient(0deg,rgba(18,15,12,.99) 70%,rgba(18,15,12,.82));
+  border-top:1px solid rgba(201,162,77,.22);
+  backdrop-filter:blur(8px);
+}
+.tab{
+  flex:1 1 0;max-width:110px;background:transparent;border:0;cursor:pointer;
+  display:flex;flex-direction:column;align-items:center;gap:4px;
+  padding:6px 2px;color:var(--mute);font-family:var(--font-b);font-size:10.5px;letter-spacing:.06em;
+}
+.tab svg{width:21px;height:21px;stroke:currentColor;fill:none;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+.tab[aria-selected=true]{color:var(--brass-2)}
+.tab[aria-selected=true] .tab__dot{opacity:1}
+.tab__dot{width:4px;height:4px;border-radius:50%;background:var(--brass-2);opacity:0}
+
+/* ---------- sheet ---------- */
+.sheet-wrap{position:fixed;inset:0;z-index:60;display:none;background:rgba(8,6,5,.66);backdrop-filter:blur(3px)}
+.sheet-wrap.is-open{display:block}
+.sheet{
+  position:absolute;left:0;right:0;bottom:0;max-width:460px;margin:0 auto;
+  background:var(--ink-2);border-radius:22px 22px 0 0;border-top:1px solid rgba(201,162,77,.35);
+  padding:16px 16px calc(20px + env(safe-area-inset-bottom));
+  max-height:92vh;overflow-y:auto;
+  animation:rise .26s cubic-bezier(.2,.8,.3,1);
+  overscroll-behavior:contain;
+}
+@keyframes rise{from{transform:translateY(22px);opacity:.6}to{transform:none;opacity:1}}
+.sheet__grip{width:38px;height:4px;border-radius:99px;background:rgba(255,255,255,.22);margin:0 auto 14px}
+.sheet h2{margin:0 0 14px;font-family:var(--font-d);font-size:16px;letter-spacing:.06em;color:#fbf3e4}
+.sheet__acts{display:grid;grid-template-columns:1fr 1.4fr;gap:9px;margin-top:6px}
+
+/* ---------- toast ---------- */
+.toast{
+  position:fixed;left:50%;bottom:calc(96px + env(safe-area-inset-bottom));transform:translate(-50%,14px);
+  z-index:80;background:var(--paper);color:var(--sumi);font-size:13px;font-weight:700;
+  padding:11px 18px;border-radius:99px;box-shadow:0 12px 30px -10px rgba(0,0,0,.9);
+  opacity:0;pointer-events:none;transition:opacity .22s,transform .22s;max-width:88vw;text-align:center;
+}
+.toast.is-on{opacity:1;transform:translate(-50%,0)}
+.view{display:none}
+.view.is-on{display:block}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="mast">
+    <div class="mast__brand">
+      <span class="seal" aria-hidden="true">残</span>
+      <div>
+        <h1>回数台帳</h1>
+        <p class="mast__sub">回数券・セット契約の残数管理</p>
+      </div>
+    </div>
+    <div class="mast__stat">
+      <span class="mast__num" id="mastNum">0</span>
+      <span class="mast__cap">施術のこり</span>
+    </div>
+  </header>
+
+  <div class="notice" id="notice">
+    <span aria-hidden="true">⚠</span>
+    <span id="noticeText"></span>
+  </div>
+
+  <!-- ============ 残数 ============ -->
+  <section class="view is-on" id="view-stock" aria-label="残数">
+    <div class="summary">
+      <div class="summary__cell">
+        <span class="summary__k">施術</span>
+        <span class="summary__v"><span id="sumTreat">0</span><small>のこり</small></span>
+      </div>
+      <div class="summary__cell">
+        <span class="summary__k">セット</span>
+        <span class="summary__v"><span id="sumPack">0</span><small>のこり</small></span>
+      </div>
+      <div class="summary__cell">
+        <span class="summary__k">サプリ</span>
+        <span class="summary__v"><span id="sumSup">0</span><small>のこり</small></span>
+      </div>
+      <div class="summary__cell summary__cell--wide">
+        <span class="summary__k" style="margin:0">今月の来店</span>
+        <span class="summary__v"><span id="sumVisit">0</span> 回</span>
+      </div>
+      <div class="summary__cell summary__cell--wide">
+        <span class="summary__k" style="margin:0">直近の期限</span>
+        <span class="summary__v" id="sumExpiry">—</span>
+      </div>
+    </div>
+
+    <div class="head">
+      <h2>契約チケット<span id="ticketCount"></span></h2>
+      <button class="btn-xs btn-xs--brass" id="btnAddPlan" type="button">＋ 契約を追加</button>
+    </div>
+    <div id="ticketList"></div>
+  </section>
+
+  <!-- ============ 記録 ============ -->
+  <section class="view" id="view-record" aria-label="記録">
+    <div class="head"><h2>きょうの記録<span>受けた施術／持ち帰ったサプリ</span></h2></div>
+
+    <div class="field">
+      <label for="recDate">日付</label>
+      <input type="date" id="recDate">
+    </div>
+
+    <div class="head" style="margin-top:6px"><h2>施術<span>単体のチケット</span></h2></div>
+    <div id="pickTreat"></div>
+
+    <div class="head" style="margin-top:18px"><h2>セット<span>当日その中から選ぶ施術</span></h2></div>
+    <div id="pickPack"></div>
+
+    <div class="head" style="margin-top:18px"><h2>サプリ<span>持ち帰った数</span></h2></div>
+    <div id="pickSup"></div>
+
+    <div class="field" style="margin-top:16px">
+      <label for="recWeight">体重（任意・kg）</label>
+      <input type="number" id="recWeight" min="0" max="400" step="0.1" inputmode="decimal" placeholder="例：68.4">
+      <p class="hint" id="recWeightHint">—</p>
+    </div>
+
+    <div class="field" style="margin-top:16px">
+      <label for="recNote">メモ（任意）</label>
+      <textarea id="recNote" placeholder="担当・体調・次回の案内など"></textarea>
+    </div>
+
+    <div class="preview" id="preview">
+      <p class="preview__k">この記録で減るもの</p>
+      <ul id="previewList"><li><span>まだ選択されていません</span><span></span></li></ul>
+    </div>
+
+    <button class="btn" id="btnSaveRec" type="button" disabled>記録を保存する</button>
+  </section>
+
+  <!-- ============ 履歴 ============ -->
+  <section class="view" id="view-history" aria-label="履歴">
+    <div id="weightCard"></div>
+    <div class="head"><h2>来店履歴<span id="histCount"></span></h2></div>
+    <div id="logList"></div>
+  </section>
+
+  <!-- ============ 分析 ============ -->
+  <section class="view" id="view-analytics" aria-label="分析">
+    <div class="head"><h2>分析<span>記録の傾向</span></h2></div>
+    <div class="summary summary--2" id="anKpi"></div>
+
+    <div class="head"><h2>月別の来店<span>直近6ヶ月</span></h2></div>
+    <div class="wcard" id="anMonths"></div>
+
+    <div class="head"><h2>セットの月上限<span>今月の使用状況</span></h2></div>
+    <div class="wcard" id="anCaps"></div>
+
+    <div class="head"><h2>使い切りの見通し<span>残りとペース</span></h2></div>
+    <div class="wcard" id="anPace"></div>
+
+    <div class="head"><h2>よく受けているメニュー<span>多い順</span></h2></div>
+    <div class="wcard" id="anTop"></div>
+
+    <div class="head"><h2>体重の変化<span>記録から</span></h2></div>
+    <div class="wcard" id="anWeight"></div>
+  </section>
+
+  <!-- ============ 設定 ============ -->
+  <section class="view" id="view-settings" aria-label="設定">
+    <div class="head"><h2>設定<span>バックアップと管理</span></h2></div>
+
+    <div class="card">
+      <h3>この端末に自動保存</h3>
+      <p id="storageMsg">—</p>
+    </div>
+
+    <div class="card">
+      <h3>バックアップを書き出す</h3>
+      <p>機種変更やデータ削除に備えて、ときどき書き出してください。ファイルを選ぶと、端末の「ダウンロード」フォルダに保存されます。</p>
+      <div class="stack">
+        <button class="btn btn--ghost" id="btnExportFile" type="button">ファイルに保存（JSON）</button>
+        <button class="btn btn--ghost" id="btnShowJson" type="button">テキストで表示・コピー</button>
+        <textarea class="mono-box" id="jsonBox" hidden spellcheck="false" placeholder="ここにバックアップの内容が出ます"></textarea>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>バックアップを読み込む</h3>
+      <p>書き出したJSONファイルを選ぶか、内容をこの画面に貼り付けて読み込みます。読み込むと、いまの契約と履歴は置き換わります。</p>
+      <div class="stack">
+        <label class="btn btn--ghost" for="fileImport" style="text-align:center;cursor:pointer">ファイルから読み込む</label>
+        <input type="file" id="fileImport" hidden>
+        <button class="btn btn--ghost" id="btnImport" type="button">上の欄に貼り付けて読み込む</button>
+        <p class="hint" id="ioMsg" style="margin:0">—</p>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>記入例を入れる</h3>
+      <p>画面の動きを確認するためのサンプルです。メニュー名・回数・日付はすべて仮の値です。あなたの契約内容は「契約を追加」から登録してください。</p>
+      <div class="stack">
+        <button class="btn btn--ghost" id="btnSample" type="button">記入例を入れる</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>すべて削除</h3>
+      <p>契約チケットと履歴をまとめて消します。実行前にバックアップを書き出しておくことをおすすめします。</p>
+      <div class="stack">
+        <button class="btn btn--danger" id="btnWipe" type="button">全データを削除する</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>使い方</h3>
+      <p><b>①契約を登録</b>　「残数」タブの「＋ 契約を追加」から、種別（施術／セット／サプリ）・メニュー名・回数（サプリは数量）を入れます。<br><br>
+      <b>②単体の施術</b>　「記録」タブで受けたメニューを＋−で選ぶだけ。<br><br>
+      <b>③セット（複数の中から選ぶ契約）</b>　登録時に「このセットで選べる施術」を1行ずつ入れておくと、「記録」タブにその一覧が並びます。当日受けたものをタップで選ぶと、残りが減ります。消化のしかたは契約ごとに選べます。<br>
+      　・<em>1来店＝1回消化</em>…何個受けても1回分（回数券タイプ）<br>
+      　・<em>選んだ数だけ消化</em>…例）3つ受ければ3回分。1回に選ぶ個数の上限も設定できます。<br><br>
+      <b>④残数</b>　「残数」タブの台紙に残りと消化済みの穴が並びます。追加契約したときは、同じ名前でもう1枚足すか、編集で回数を書き換えます。<br><br>
+      <b>⑤残数を直す</b>　サロンで確認した実際の残数がわかったら、チケットの「残数を直す」に入力します。差は「残数調整」として履歴に残り、あとから見返せます。<br><br>
+      <b>⑥体重</b>　「記録」タブの体重欄に入れて保存すると、履歴タブの上に最新の体重・前回比・推移グラフが出ます。施術を受けない日でも、体重だけの記録ができます。<br><br>
+      <b>⑦分析</b>　「分析」タブに、来店回数・平均間隔、月別の来店と消化、セットの月上限の使用状況、使い切りの見通し（このペースで何日か・期限に足りるか）、よく受けているメニュー、体重の変化がまとまります。</p>
+    </div>
+
+    <div class="card">
+      <h3>このアプリについて</h3>
+      <p>記録はすべてお使いの端末の中だけに保存され、外部に送信しません。会員登録も不要です。<br>
+      アプリを消したり、ブラウザのデータを削除したりすると記録も消えるため、ときどきバックアップを書き出してください。<br><br>
+      書体：Shippori Mincho B1、Zen Kaku Gothic New、IBM Plex Mono（いずれも SIL Open Font License 1.1 に基づき同梱）</p>
+    </div>
+
+    <p class="ver" id="verLine">—</p>
+  </section>
+</div>
+
+<nav class="tabbar" role="tablist" aria-label="画面切り替え">
+  <button class="tab" role="tab" aria-selected="true" data-view="stock" type="button">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h10"/></svg>
+    <span class="tab__dot"></span>残数
+  </button>
+  <button class="tab" role="tab" aria-selected="false" data-view="record" type="button">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+    <span class="tab__dot"></span>記録
+  </button>
+  <button class="tab" role="tab" aria-selected="false" data-view="history" type="button">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 8v4l3 2M21 12a9 9 0 1 1-3-6.7"/><path d="M21 4v4h-4"/></svg>
+    <span class="tab__dot"></span>履歴
+  </button>
+  <button class="tab" role="tab" aria-selected="false" data-view="analytics" type="button">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 20V10M12 20V4M19 20v-6"/></svg>
+    <span class="tab__dot"></span>分析
+  </button>
+  <button class="tab" role="tab" aria-selected="false" data-view="settings" type="button">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M18.4 5.6l-2.1 2.1M7.7 16.3l-2.1 2.1"/></svg>
+    <span class="tab__dot"></span>設定
+  </button>
+</nav>
+
+<div class="sheet-wrap" id="sheetWrap" role="dialog" aria-modal="true" aria-labelledby="sheetTitle">
+  <div class="sheet" id="sheet"></div>
+</div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<datalist id="menuPresets"></datalist>
+
+<script>
+(function(){
+'use strict';
+var KEY='kaitoroku-v1';
+var APP_VER='2.0';
+var APP_VER_DATE='2026-09-26';
+var $=function(s){return document.querySelector(s)};
+var plans=[],logs=[],draft={},packSel={},storageOK=true,jsonVisible=false;
+
+/* ---------- utils ---------- */
+function uid(){return Math.random().toString(36).slice(2,9)}
+function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
+function pad(n){return String(n).padStart(2,'0')}
+function todayISO(){var d=new Date();return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate())}
+function fmt(iso){if(!iso)return '—';var p=String(iso).split('-');return p.length<3?iso:p[0]+'/'+p[1]+'/'+p[2]}
+function monthKey(iso){return String(iso||'').slice(0,7)}
+function daysUntil(iso){
+  if(!iso)return null;
+  var t=new Date(iso+'T00:00:00'),n=new Date();n.setHours(0,0,0,0);
+  return Math.round((t-n)/86400000);
+}
+function consumed(pid){
+  var t=0;
+  for(var i=0;i<logs.length;i++){
+    var it=logs[i].items||[];
+    for(var j=0;j<it.length;j++){if(it[j].planId===pid)t+=Number(it[j].qty)||0}
+  }
+  return t;
+}
+function remainOf(p){return (Number(p.total)||0)-consumed(p.id)}
+function planById(id){for(var i=0;i<plans.length;i++){if(plans[i].id===id)return plans[i]}return null}
+function kindLabel(k){return k==='supplement'?'サプリ':(k==='pack'?'セット':'施術')}
+function packSelOf(id){if(!packSel[id])packSel[id]=[];return packSel[id]}
+function packQty(p){
+  var sel=packSelOf(p.id);
+  if(!sel.length)return 0;
+  return p.consume==='item'?sel.length:1;
+}
+function packOptions(p){return (p&&p.options&&p.options.length)?p.options:[]}
+function weightOf(l){var w=l?Number(l.w):NaN;return (isFinite(w)&&w>0)?w:null}
+function weightSeries(){
+  var arr=[];
+  logs.forEach(function(l){var w=weightOf(l);if(w!==null)arr.push({date:l.date,w:w})});
+  arr.sort(function(a,b){return a.date<b.date?-1:(a.date>b.date?1:0)});
+  return arr;
+}
+function packUsedThisMonth(p){
+  var mk=monthKey(todayISO()),n=0;
+  logs.forEach(function(l){
+    if(monthKey(l.date)!==mk)return;
+    (l.items||[]).forEach(function(it){if(it.planId===p.id&&!it.adjust)n++});
+  });
+  return n;
+}
+function addMonthsMinusDay(iso,m){
+  if(!iso||!m)return '';
+  var d=new Date(iso+'T00:00:00');
+  if(isNaN(d.getTime()))return '';
+  d.setMonth(d.getMonth()+Number(m));d.setDate(d.getDate()-1);
+  return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());
+}
+
+/* ---------- storage ---------- */
+function save(){
+  if(!storageOK)return;
+  try{localStorage.setItem(KEY,JSON.stringify({plans:plans,logs:logs}))}
+  catch(e){storageOK=false;renderStorage()}
+}
+function load(){
+  try{
+    localStorage.setItem(KEY+'__t','1');localStorage.removeItem(KEY+'__t');
+    var raw=localStorage.getItem(KEY);
+    if(raw){var d=JSON.parse(raw);plans=d.plans||[];logs=d.logs||[]}
+  }catch(e){storageOK=false}
+}
+function renderVer(){
+  var el=$('#verLine');if(!el)return;
+  el.innerHTML='回数台帳 <b>バージョン '+APP_VER+'</b>（'+APP_VER_DATE+'）<br>更新が届いたかは、この数字で確認できます';
+}
+
+function renderStorage(){
+  var el=$('#storageMsg');
+  if(storageOK){
+    el.textContent='このブラウザに自動保存しています。アプリを閉じても残りますが、機種変更やブラウザのデータ削除で消えます。ときどきバックアップを書き出してください。';
+  }else{
+    el.textContent='この表示環境ではブラウザ保存が使えないため、いま入力した内容は閉じると消えます。下の「バックアップを書き出す」でファイルに退避してください。';
+    showNotice('ブラウザ保存が使えない環境です。入力内容を残すには、設定タブからバックアップを書き出してください。');
+  }
+}
+function showNotice(msg){$('#noticeText').textContent=msg;$('#notice').classList.add('is-on')}
+
+/* ---------- toast ---------- */
+var toastTimer=null;
+function toast(msg){
+  var t=$('#toast');t.textContent=msg;t.classList.add('is-on');
+  clearTimeout(toastTimer);toastTimer=setTimeout(function(){t.classList.remove('is-on')},2400);
+}
+
+/* ---------- tabs ---------- */
+var VIEWS=['stock','record','history','analytics','settings'];
+function go(view){
+  VIEWS.forEach(function(v){$('#view-'+v).classList.toggle('is-on',v===view)});
+  Array.prototype.forEach.call(document.querySelectorAll('.tab'),function(b){
+    b.setAttribute('aria-selected',String(b.dataset.view===view));
+  });
+  window.scrollTo({top:0,behavior:'auto'});
+  if(view==='record'){var d=$('#recDate');if(!d.value)d.value=todayISO();updateWeightHint()}
+}
+
+/* ---------- render: header + summary ---------- */
+function renderTop(){
+  var tSum=0,pSum=0,sSum=0;
+  plans.forEach(function(p){
+    var r=Math.max(0,remainOf(p));
+    if(p.kind==='supplement')sSum+=r;
+    else if(p.kind==='pack')pSum+=r;
+    else tSum+=r;
+  });
+  $('#mastNum').textContent=tSum+pSum;
+  $('#sumTreat').textContent=tSum;
+  $('#sumPack').textContent=pSum;
+  $('#sumSup').textContent=sSum;
+  var mk=monthKey(todayISO()),n=0;
+  logs.forEach(function(l){if(monthKey(l.date)===mk)n++});
+  $('#sumVisit').textContent=n;
+  var best=null;
+  plans.forEach(function(p){
+    var r=remainOf(p);if(r<=0||!p.expiry)return;
+    var d=daysUntil(p.expiry);
+    if(d===null||d<0)return;
+    if(!best||d<best.d)best={d:d,date:p.expiry,name:p.name};
+  });
+  $('#sumExpiry').textContent=best?(fmt(best.date)+'（あと'+best.d+'日）'):'期限なし';
+}
+
+/* ---------- render: tickets ---------- */
+function renderTickets(){
+  var host=$('#ticketList');
+  var rank={pack:0,treatment:1,supplement:2};
+  var list=plans.slice().sort(function(a,b){
+    if(a.kind!==b.kind)return (rank[a.kind]||0)-(rank[b.kind]||0);
+    return remainOf(a)-remainOf(b);
+  });
+  $('#ticketCount').textContent=list.length?'（'+list.length+'件）':'';
+  if(!list.length){
+    host.innerHTML='<div class="empty"><h3>まだ契約が登録されていません</h3>'+
+      '<p>「＋ 契約を追加」から、契約したメニューと回数（サプリは数量）を登録してください。<br>'+
+      '設定タブの「記入例を入れる」で動きを先に確認することもできます。</p></div>';
+    return;
+  }
+  var html='';
+  list.forEach(function(p,i){
+    var used=consumed(p.id),raw=(Number(p.total)||0)-used,rem=Math.max(0,raw);
+    var du=daysUntil(p.expiry),total=Number(p.total)||0;
+    var opts=packOptions(p);
+    var chips='';
+    if(raw<=0)chips+='<span class="chip chip--done">使い切り</span>';
+    else if(raw<=2)chips+='<span class="chip chip--warn">残りわずか</span>';
+    if(p.expiry&&du!==null&&du<0)chips+='<span class="chip chip--warn">期限切れ</span>';
+    else if(p.expiry&&du!==null&&du<=30)chips+='<span class="chip chip--exp">期限間近</span>';
+    var marks='';
+    if(total<=24){
+      marks='<div class="punches" aria-hidden="true">';
+      for(var k=0;k<total;k++)marks+='<span class="punch'+(k<used?' punch--used':'')+'"></span>';
+      marks+='</div>';
+    }else{
+      var pct=total?Math.min(100,Math.round(used/total*100)):0;
+      marks='<div class="bar" aria-hidden="true"><div class="bar__fill" style="width:'+pct+'%"></div></div>'+
+            '<span class="bar__cap">'+used+' / '+total+' 消化（'+pct+'%）</span>';
+    }
+    var howTo='',monthLine='',mc=Number(p.monthlyCap)||0;
+    if(p.kind==='pack'){
+      var pc=Number(p.pickCount)||0;
+      howTo='<br>'+(p.pickMode==='exact'
+        ?('1回に'+(pc||'—')+'つ選択（この数ちょうど）')
+        :(p.consume==='item'?('1回の来店で'+(pc||'—')+'つまで選択'):'選ぶ数は自由'));
+      howTo+=(p.consume==='item'?'／選んだ数だけ消化':'／1来店＝1回消化');
+      if(mc){
+        howTo+='／月'+mc+'回まで';
+        monthLine='<p class="ticket__note">今月の消化 '+packUsedThisMonth(p)+' / '+mc+' 回</p>';
+      }
+      if(p.periodMonths)howTo+='<br>契約期間 '+(Number(p.periodMonths)/12)+'年';
+    }
+    html+='<article class="ticket'+(raw<=0?' is-done':'')+'">'+
+      '<div class="ticket__stub">'+
+        '<span class="stub__no">No.'+pad(i+1)+'</span>'+
+        '<span class="stub__remain">'+rem+'</span>'+
+        '<span class="stub__unit">'+esc(p.unit||'回')+' のこり</span>'+
+      '</div>'+
+      '<div class="ticket__body">'+
+        '<div class="ticket__top">'+
+          '<h3 class="ticket__name">'+esc(p.name)+'</h3>'+
+          '<span class="ticket__kind'+(p.kind==='pack'?' ticket__kind--pack':'')+'">'+kindLabel(p.kind)+'</span>'+
+        '</div>'+
+        (chips?'<div class="chips">'+chips+'</div>':'')+
+        '<p class="ticket__meta">契約 '+fmt(p.start)+' ・ 全'+total+esc(p.unit||'回')+
+          ' ・ 消化'+used+esc(p.unit||'回')+howTo+
+          (p.expiry?'<br>有効期限 '+fmt(p.expiry)+'（あと'+Math.max(0,du)+'日）':'')+'</p>'+
+        monthLine+
+        (opts.length?'<p class="ticket__note">選べる施術：'+esc(opts.join('／'))+'</p>':'')+
+        (p.note?'<p class="ticket__note">'+esc(p.note)+'</p>':'')+
+        marks+
+        '<div class="ticket__acts">'+
+          '<button class="btn-xs btn-xs--fill" type="button" data-use="'+p.id+'"'+(raw<=0?' disabled':'')+'>'+
+            (p.kind==='pack'?'これを受けた（施術を選ぶ）':'これを受けた')+'</button>'+
+          '<button class="btn-xs" type="button" data-edit="'+p.id+'">編集</button>'+
+          '<button class="btn-xs" type="button" data-adj="'+p.id+'">残数を直す</button>'+
+          '<button class="btn-xs" type="button" data-del="'+p.id+'">削除</button>'+
+        '</div>'+
+      '</div></article>';
+  });
+  host.innerHTML=html;
+}
+
+/* ---------- render: record picks ---------- */
+function renderPicks(){
+  var groups=[['treatment',$('#pickTreat')],['supplement',$('#pickSup')]];
+  groups.forEach(function(g){
+    var kind=g[0],host=g[1];
+    var list=plans.filter(function(p){return p.kind===kind});
+    if(!list.length){
+      host.innerHTML='<div class="empty" style="padding:18px"><p>'+
+        (kind==='supplement'?'サプリの契約がまだ登録されていません。':'施術の契約がまだ登録されていません。')+
+        '<br>残数タブの「＋ 契約を追加」から登録できます。</p></div>';
+      return;
+    }
+    var html='';
+    list.forEach(function(p){
+      var rem=Math.max(0,remainOf(p)),q=Number(draft[p.id])||0;
+      html+='<div class="pick'+(rem<=0?' is-done':'')+'">'+
+        '<div class="pick__info">'+
+          '<div class="pick__name">'+esc(p.name)+'</div>'+
+          '<div class="pick__meta">のこり '+(rem<=0?'<b>0</b>':rem)+' '+esc(p.unit||'回')+
+            (q?' ・ 今回 '+q+esc(p.unit||'回'):'')+'</div>'+
+        '</div>'+
+        '<div class="stepper">'+
+          '<button type="button" data-dec="'+p.id+'"'+(q<=0?' disabled':'')+' aria-label="減らす">−</button>'+
+          '<span class="stepper__v" data-v="'+p.id+'">'+q+'</span>'+
+          '<button type="button" data-inc="'+p.id+'"'+(rem<=0||q>=rem?' disabled':'')+' aria-label="増やす">＋</button>'+
+        '</div></div>';
+    });
+    host.innerHTML=html;
+  });
+}
+
+function renderPacks(){
+  var host=$('#pickPack');
+  var list=plans.filter(function(p){return p.kind==='pack'});
+  if(!list.length){
+    host.innerHTML='<div class="empty" style="padding:18px"><p>セットの契約がまだ登録されていません。<br>'+
+      '「＋ 契約を追加」で種別「セット」を選ぶと、当日その中から施術を選べるようになります。</p></div>';
+    return;
+  }
+  var html='';
+  list.forEach(function(p){
+    var rem=Math.max(0,remainOf(p)),opts=packOptions(p),sel=packSelOf(p.id),q=packQty(p);
+    var cap=Number(p.pickCount)||0,mc=Number(p.monthlyCap)||0,thisMonth=packUsedThisMonth(p);
+    var howMany='';
+    if(opts.length){
+      if(p.pickMode==='exact'){
+        if(!cap)howMany='1回に選ぶ個数が未設定です（編集で設定してください）';
+        else if(sel.length<cap)howMany='この契約は1回に'+cap+'つ選択です（あと'+(cap-sel.length)+'つ選んでください）';
+        else howMany='この契約は1回に'+cap+'つ選択です（'+cap+'つ選択済み）';
+      }else if(p.consume==='item'){
+        howMany=cap
+          ?(sel.length<cap?'受けたい施術をタップで選択（あと'+(cap-sel.length)+'つ選べます）':'受けたい施術をタップで選択（上限まで選択済み）')
+          :'受けたい施術をタップで選択（個数の上限が未設定です）';
+      }else{
+        howMany='受けたい施術をタップで選択（いくつ受けても消化は1回です）';
+      }
+      if(sel.length)howMany+='　選択中 '+sel.length+'件';
+      if(mc)howMany+='／今月 '+thisMonth+' / '+mc+' 回';
+    }
+    html+='<div class="pack'+(rem<=0?' is-done':'')+'">'+
+      '<div class="pack__top">'+
+        '<div class="pack__info">'+
+          '<div class="pack__name">'+esc(p.name)+'</div>'+
+          '<div class="pack__meta">のこり '+(rem<=0?'<b>0</b>':rem)+' '+esc(p.unit||'回')+' ・ '+
+            (p.pickMode==='exact'?('1回に'+(cap||'—')+'つ選択'):'選ぶ数は自由')+'／'+
+            (p.consume==='item'?'選んだ数だけ消化':'1来店＝1回消化')+
+            (mc?('／月'+mc+'回まで（今月 '+thisMonth+'）'):'')+
+          '</div>'+
+        '</div>'+
+        '<div class="pack__cost">今回 <b>'+q+'</b>'+(p.unit||'回')+'消化</div>'+
+      '</div>'+
+      (opts.length
+        ? '<div class="pack__opts">'+opts.map(function(o){
+            var on=sel.indexOf(o)>=0;
+            return '<button type="button" class="opt'+(on?' is-on':'')+'" data-pack="'+p.id+'" data-opt="'+esc(o)+'" aria-pressed="'+on+'">'+esc(o)+'</button>';
+          }).join('')+'</div>'+
+          '<p class="hint">'+howMany+'</p>'
+        : '<p class="hint">このセットに選べる施術が未登録です。残数タブの「編集」から追加してください。</p>')+
+    '</div>';
+  });
+  host.innerHTML=html;
+}
+
+function renderPreview(){
+  var rows=[],over=[];
+  plans.forEach(function(p){
+    if(p.kind!=='pack')return;
+    var sel=packSelOf(p.id);if(!sel.length)return;
+    var q=packQty(p);if(q<=0)return;
+    var rem=remainOf(p),after=rem-q;
+    rows.push('<li><span>'+esc(p.name)+' ×'+q+esc(p.unit||'回')+
+      '<em class="preview__sel">'+esc(sel.join('／'))+'</em></span>'+
+      '<span>のこり '+Math.max(0,rem)+' → '+Math.max(0,after)+'</span></li>');
+    if(after<0)over.push(p.name);
+  });
+  Object.keys(draft).forEach(function(pid){
+    var q=Number(draft[pid])||0;if(q<=0)return;
+    var p=planById(pid);if(!p)return;
+    var rem=remainOf(p),after=rem-q;
+    rows.push('<li><span>'+esc(p.name)+' ×'+q+'</span><span>のこり '+Math.max(0,rem)+' → '+Math.max(0,after)+'</span></li>');
+    if(after<0)over.push(p.name);
+  });
+  var wEl=$('#recWeight'),wIn=wEl?parseFloat(wEl.value):NaN;
+  var hasW=isFinite(wIn)&&wIn>0;
+  if(hasW)rows.push('<li><span>体重</span><span>'+wIn.toFixed(1)+' kg を記録</span></li>');
+  var nItems=rows.length-(hasW?1:0);
+  $('#previewList').innerHTML=rows.length?rows.join(''):'<li><span>まだ選択されていません</span><span></span></li>';
+  var btn=$('#btnSaveRec');
+  btn.disabled=rows.length===0;
+  btn.textContent=nItems
+    ?('記録を保存する（'+nItems+'件'+(hasW?'＋体重':'')+'）')
+    :(hasW?'体重を記録する':'記録を保存する');
+  if(over.length)btn.textContent='記録を保存する（残数を超えます）';
+}
+
+/* ---------- render: history ---------- */
+function renderLogs(){
+  var host=$('#logList');
+  var list=logs.slice().sort(function(a,b){return a.date<b.date?1:(a.date>b.date?-1:0)});
+  $('#histCount').textContent=list.length?'（'+list.length+'件）':'';
+  if(!list.length){
+    host.innerHTML='<div class="empty"><h3>履歴はまだありません</h3><p>「記録」タブで受けた施術・持ち帰ったサプリを選ぶと、ここに残ります。</p></div>';
+    return;
+  }
+  var html='';
+  list.forEach(function(l){
+    var items=(l.items||[]).map(function(it){
+      var sub=(it.sel&&it.sel.length)?'<span class="log__sel">└ '+esc(it.sel.join('／'))+'</span>':'';
+      if(it.adjust){
+        return '<li>'+esc(it.name)+'　残数調整<span class="log__sel">└ 実残数 '+esc(it.to)+' '+esc(it.unit||'')+
+          ' に合わせて消化数を'+(Number(it.qty)>0?'+':'')+esc(it.qty)+esc(it.unit||'')+'補正</span></li>';
+      }
+      return '<li>'+esc(it.name)+' ×'+esc(it.qty)+' '+esc(it.unit||'')+sub+'</li>';
+    }).join('');
+    if(!items)items='<li class="log__only">体重のみの記録</li>';
+    html+='<div class="log">'+
+      '<div class="log__date">'+fmt(l.date)+'</div>'+
+      '<ul class="log__items">'+items+'</ul>'+
+      (weightOf(l)!==null?'<p class="log__weight">体重 '+weightOf(l).toFixed(1)+' kg</p>':'')+
+      (l.note?'<p class="log__note">'+esc(l.note)+'</p>':'')+
+      '<button class="log__del" type="button" data-logdel="'+l.id+'">この記録を取り消す（残数を戻す）</button>'+
+    '</div>';
+  });
+  host.innerHTML=html;
+}
+
+function updateWeightHint(){
+  var el=$('#recWeightHint');if(!el)return;
+  var s=weightSeries();
+  el.textContent=s.length
+    ?('前回 '+s[s.length-1].w.toFixed(1)+' kg（'+fmt(s[s.length-1].date)+'）')
+    :'はじめての体重記録です。';
+}
+
+function renderWeight(){
+  var host=$('#weightCard');if(!host)return;
+  var s=weightSeries();
+  if(!s.length){
+    host.innerHTML='<div class="wcard"><span class="wcard__k">体重のきろく</span>'+
+      '<p class="hint" style="margin:0">まだ体重の記録がありません。「記録」タブの体重欄に入れて保存すると、ここに推移が出ます。</p></div>';
+    return;
+  }
+  var last=s[s.length-1],prev=s.length>1?s[s.length-2]:null;
+  var d=prev?(last.w-prev.w):null;
+  var dTxt=d===null?'':((d>0?'+':'')+d.toFixed(1)+' kg');
+  var html='<div class="wcard"><span class="wcard__k">体重のきろく</span>'+
+    '<div class="wcard__top">'+
+      '<span class="wcard__v">'+last.w.toFixed(1)+'<small>kg</small></span>'+
+      '<span class="wcard__d">'+(prev?('前回 '+prev.w.toFixed(1)+'kg（'+fmt(prev.date)+'）<br>比 '+dTxt):'最初の記録')+'</span>'+
+    '</div>';
+  var series=s.slice(-10);
+  if(series.length>1){
+    var ws=series.map(function(x){return x.w});
+    var mn=Math.min.apply(null,ws),mx=Math.max.apply(null,ws),rg=(mx-mn)||1;
+    var pt=function(x,i){
+      var px=6+(i/(series.length-1))*388;
+      var py=44-((x.w-mn)/rg)*32;
+      return [px,py];
+    };
+    var line=series.map(function(x,i){var p=pt(x,i);return p[0].toFixed(1)+','+p[1].toFixed(1)}).join(' ');
+    html+='<svg viewBox="0 0 400 54" role="img" aria-label="体重の推移">'+
+      '<polyline points="'+line+'" fill="none" stroke="#c9a24d" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>'+
+      series.map(function(x,i){var p=pt(x,i);
+        return '<circle cx="'+p[0].toFixed(1)+'" cy="'+p[1].toFixed(1)+'" r="2.3" fill="#e0bd6d"/>';
+      }).join('')+
+      '</svg>'+
+      '<span class="hint" style="margin-top:4px;display:block">左が古い → 右が最新（直近 '+series.length+' 件）</span>';
+  }
+  html+='<ul class="wcard__list">'+s.slice(-5).reverse().map(function(x){
+      return '<li><span>'+fmt(x.date)+'</span><span>'+x.w.toFixed(1)+' kg</span></li>';
+    }).join('')+'</ul></div>';
+  host.innerHTML=html;
+}
+
+function monthSeq(n){
+  var out=[],d=new Date();d.setDate(1);
+  for(var i=n-1;i>=0;i--){var t=new Date(d.getFullYear(),d.getMonth()-i,1);out.push(t.getFullYear()+'-'+pad(t.getMonth()+1))}
+  return out;
+}
+function visitDates(){
+  var seen={},out=[];
+  logs.forEach(function(l){
+    var real=(l.items||[]).some(function(it){return !it.adjust});
+    if(real&&!seen[l.date]){seen[l.date]=1;out.push(l.date)}
+  });
+  return out.sort();
+}
+function avgInterval(){
+  var d=visitDates();if(d.length<2)return null;
+  var a=new Date(d[0]+'T00:00:00'),b=new Date(d[d.length-1]+'T00:00:00');
+  return Math.round((b-a)/86400000/(d.length-1));
+}
+function paceOf(p){
+  var used=consumed(p.id);if(!used||!p.start)return null;
+  var st=new Date(p.start+'T00:00:00'),now=new Date();now.setHours(0,0,0,0);
+  var days=Math.round((now-st)/86400000);
+  if(days<1)return null;
+  var perDay=used/days,rem=Math.max(0,remainOf(p));
+  return {perMonth:perDay*30.44,days:perDay>0?Math.round(rem/perDay):null};
+}
+function renderAnalytics(){
+  var kpi=$('#anKpi');if(!kpi)return;
+  var visits=visitDates(),mk=monthKey(todayISO()),thisMonth=0;
+  logs.forEach(function(l){
+    if(monthKey(l.date)!==mk)return;
+    if((l.items||[]).some(function(it){return !it.adjust}))thisMonth++;
+  });
+  var ai=avgInterval();
+  kpi.innerHTML=
+    '<div class="summary__cell"><span class="summary__k">来店回数（累計）</span><span class="summary__v"><span>'+visits.length+'</span><small>回</small></span></div>'+
+    '<div class="summary__cell"><span class="summary__k">今月の来店</span><span class="summary__v"><span>'+thisMonth+'</span><small>回</small></span></div>'+
+    '<div class="summary__cell"><span class="summary__k">平均間隔</span><span class="summary__v">'+(ai!==null?('<span>'+ai+'</span><small>日</small>'):'<span>—</span>')+'</span></div>'+
+    '<div class="summary__cell"><span class="summary__k">契約チケット</span><span class="summary__v"><span>'+plans.length+'</span><small>枚</small></span></div>';
+
+  var months=monthSeq(6),vC={},cC={},mx=1;
+  months.forEach(function(m){vC[m]=0;cC[m]=0});
+  logs.forEach(function(l){
+    var m=monthKey(l.date);if(!(m in vC))return;
+    var real=false,cons=0;
+    (l.items||[]).forEach(function(it){if(it.adjust)return;real=true;cons+=Number(it.qty)||0});
+    if(real)vC[m]++;
+    cC[m]+=cons;
+  });
+  months.forEach(function(m){mx=Math.max(mx,vC[m])});
+  $('#anMonths').innerHTML=months.map(function(m){
+    var v=vC[m],w=v?Math.round(v/mx*100):0;
+    return '<div class="an-row"><span class="an-row__label">'+Number(m.split('-')[1])+'月</span>'+
+      '<span class="an-row__bar"><i class="an-row__fill" style="width:'+w+'%"></i></span>'+
+      '<span class="an-row__v">'+v+'回 / 消化'+cC[m]+'</span></div>';
+  }).join('')+'<p class="an-note">棒＝来店回数（最大'+mx+'回）。右の数字は「来店回数 / その月に消化した数」。</p>';
+
+  var packs=plans.filter(function(p){return p.kind==='pack'&&Number(p.monthlyCap)});
+  $('#anCaps').innerHTML=packs.length?packs.map(function(p){
+    var used=packUsedThisMonth(p),cap=Number(p.monthlyCap);
+    return '<div class="an-row"><span class="an-row__label" style="flex-basis:126px">'+esc(p.name)+'</span>'+
+      '<span class="an-row__bar"><i class="an-row__fill" style="width:'+Math.min(100,Math.round(used/cap*100))+'%"></i></span>'+
+      '<span class="an-row__v">今月 '+used+' / '+cap+'</span></div>';
+  }).join('')+'<p class="an-note">契約の上限（月4回まで等）に対する今月の使用状況です。</p>'
+  :'<p class="hint" style="margin:0">月の上限があるセット契約はありません。</p>';
+
+  var rows=[];
+  plans.forEach(function(p){
+    var rem=Math.max(0,remainOf(p));if(!rem)return;
+    var pc=paceOf(p);if(!pc)return;
+    var due=daysUntil(p.expiry);
+    var warn=(due!==null&&due>=0&&pc.days!==null&&pc.days>due);
+    rows.push({name:p.name,rem:rem,unit:p.unit||'回',pm:pc.perMonth,eta:pc.days,due:due,warn:warn});
+  });
+  rows.sort(function(a,b){
+    if(a.warn!==b.warn)return a.warn?-1:1;
+    if(a.due===null&&b.due===null)return 0;
+    if(a.due===null)return 1;
+    if(b.due===null)return -1;
+    return a.due-b.due;
+  });
+  $('#anPace').innerHTML=rows.length?rows.slice(0,8).map(function(r){
+    return '<div class="an-line"><span>'+esc(r.name)+(r.warn?' <span class="an-warn">期限に足りない可能性</span>':'')+'</span>'+
+      '<span><b>のこり'+r.rem+r.unit+'</b> ／ 月'+r.pm.toFixed(1)+r.unit+
+      (r.due!==null?(' ／ 期限まで'+Math.max(0,r.due)+'日'):'')+
+      (r.eta!==null?(' ／ このペースで約'+r.eta+'日'):'')+'</span></div>';
+  }).join('')+'<p class="an-note">「月◯」は契約日からの実績ペース、「約◯日」はそのペースで使い切るまでの目安です。期限に足りないものは上に出ます。</p>'
+  :'<p class="hint" style="margin:0">まだ消化の記録がないため、ペースを計算できません。</p>';
+
+  var tally={};
+  logs.forEach(function(l){(l.items||[]).forEach(function(it){
+    if(it.adjust)return;
+    var k=it.name+(it.unit?('（'+it.unit+'）'):'');
+    tally[k]=(tally[k]||0)+(Number(it.qty)||0);
+  })});
+  var arr=Object.keys(tally).map(function(k){return {k:k,v:tally[k]}}).sort(function(a,b){return b.v-a.v});
+  $('#anTop').innerHTML=arr.length?arr.slice(0,6).map(function(x){
+    var w=Math.round(x.v/arr[0].v*100);
+    return '<div class="an-row"><span class="an-row__label" style="flex-basis:150px">'+esc(x.k)+'</span>'+
+      '<span class="an-row__bar"><i class="an-row__fill" style="width:'+w+'%"></i></span>'+
+      '<span class="an-row__v">'+x.v+'</span></div>';
+  }).join(''):'<p class="hint" style="margin:0">まだ記録がありません。</p>';
+
+  var s=weightSeries();
+  if(!s.length){$('#anWeight').innerHTML='<p class="hint" style="margin:0">体重の記録がまだありません。</p>'}
+  else{
+    var last=s[s.length-1];
+    var agoOf=function(days){
+      var lim=new Date();lim.setHours(0,0,0,0);lim.setDate(lim.getDate()-days);
+      var pick=null;
+      s.forEach(function(x){if(new Date(x.date+'T00:00:00')<=lim)pick=x;});
+      return pick;
+    };
+    var d30=agoOf(30),d90=agoOf(90);
+    var lim90=new Date();lim90.setHours(0,0,0,0);lim90.setDate(lim90.getDate()-90);
+    var win=s.filter(function(x){return new Date(x.date+'T00:00:00')>=lim90}).map(function(x){return x.w});
+    var html='<div class="an-line"><span>最新（'+fmt(last.date)+'）</span><span><b>'+last.w.toFixed(1)+' kg</b></span></div>';
+    if(d30)html+='<div class="an-line"><span>30日以上前（'+fmt(d30.date)+'）との差</span><span><b>'+((last.w-d30.w)>0?'+':'')+(last.w-d30.w).toFixed(1)+' kg</b></span></div>';
+    if(d90)html+='<div class="an-line"><span>90日以上前（'+fmt(d90.date)+'）との差</span><span><b>'+((last.w-d90.w)>0?'+':'')+(last.w-d90.w).toFixed(1)+' kg</b></span></div>';
+    if(win.length)html+='<div class="an-line"><span>直近90日の範囲</span><span><b>'+Math.min.apply(null,win).toFixed(1)+' 〜 '+Math.max.apply(null,win).toFixed(1)+' kg</b></span></div>';
+    $('#anWeight').innerHTML=html;
+  }
+}
+
+function syncPresets(){
+  var dl=$('#menuPresets');if(!dl)return;
+  var seen={},out=[];
+  plans.forEach(function(p){
+    if(p.name&&!seen[p.name]){seen[p.name]=1;out.push(p.name)}
+    (p.options||[]).forEach(function(o){if(o&&!seen[o]){seen[o]=1;out.push(o)}});
+  });
+  dl.innerHTML=out.slice(0,60).map(function(n){return '<option value="'+esc(n)+'"></option>'}).join('');
+}
+
+function renderAll(){syncPresets();renderTop();renderTickets();renderPicks();renderPacks();renderPreview();renderLogs();renderWeight();renderAnalytics();updateWeightHint();renderStorage();renderVer()}
+
+/* ---------- sheet ---------- */
+function openSheet(html){
+  $('#sheet').innerHTML='<div class="sheet__grip"></div>'+html;
+  $('#sheetWrap').classList.add('is-open');
+}
+function closeSheet(){$('#sheetWrap').classList.remove('is-open');$('#sheet').innerHTML=''}
+
+var KIND_HINT={
+  treatment:'施術1つ分の回数券です。受けたら1回ずつ消化します。',
+  pack:'1つの契約の中から、その日受ける施術を選べます。回数は契約全体で減っていきます。',
+  supplement:'持ち帰ったサプリの数量を管理します。'
+};
+var CONSUME_HINT={
+  visit:'何個受けても1回の消化です。回数券・通いタイプに向いています。',
+  item:'受けた個数ぶんだけ回数を消化します。あわせて1回に選ぶ個数の上限も決められます。'
+};
+
+function planSheet(id){
+  var p=id?planById(id):null;
+  var kind=p?p.kind:'treatment';
+  var unit=p?(p.unit||'回'):'回';
+  var consume=(p&&p.kind==='pack')?(p.consume||'visit'):'visit';
+  var pickMode=(p&&p.kind==='pack')?(p.pickMode||'upto'):'upto';
+  var pickModeNow=pickMode;
+  var monthlyCap=(p&&p.monthlyCap)?p.monthlyCap:'';
+  var periodMonths=(p&&p.periodMonths)?p.periodMonths:'';
+  openSheet(
+    '<h2 id="sheetTitle">'+(p?'契約チケットを編集':'契約を追加')+'</h2>'+
+    '<div class="field"><label>種別</label><div class="seg" id="fKind">'+
+      '<button type="button" data-kind="treatment" aria-pressed="'+(kind==='treatment')+'">施術</button>'+
+      '<button type="button" data-kind="pack" aria-pressed="'+(kind==='pack')+'">セット</button>'+
+      '<button type="button" data-kind="supplement" aria-pressed="'+(kind==='supplement')+'">サプリ</button>'+
+    '</div><p class="hint" id="kindHint">'+(KIND_HINT[kind]||'')+'</p></div>'+
+    '<div class="field"><label for="fName">メニュー名</label>'+
+      '<input type="text" id="fName" list="menuPresets" value="'+esc(p?p.name:'')+'" placeholder="例：ボディケア90分">'+
+      '<p class="hint">登録ずみのメニュー名が候補に出ます。自由に入力してもかまいません。</p></div>'+
+    '<div id="packBox">'+
+      '<div class="field"><label>消化のしかた</label><div class="seg" id="fConsume">'+
+        '<button type="button" data-consume="visit" aria-pressed="'+(consume==='visit')+'">1来店＝1回消化</button>'+
+        '<button type="button" data-consume="item" aria-pressed="'+(consume==='item')+'">選んだ数だけ消化</button>'+
+      '</div><p class="hint" id="consumeHint">'+(CONSUME_HINT[consume]||'')+'</p></div>'+
+      '<div class="field"><label>1回の選び方</label><div class="seg" id="fPickMode">'+
+        '<button type="button" data-pm="exact" aria-pressed="'+(pickMode==='exact')+'">決まった個数をちょうど</button>'+
+        '<button type="button" data-pm="upto" aria-pressed="'+(pickMode==='upto')+'">上限までの自由選択</button>'+
+      '</div><p class="hint" id="pickModeHint"></p></div>'+
+      '<div class="field" id="pickCountField"><label for="fPick">1回に選ぶ個数</label>'+
+        '<input type="number" id="fPick" min="1" step="1" value="'+(p&&p.pickCount?p.pickCount:'3')+'">'+
+        '<p class="hint" id="pickCountHint"></p></div>'+
+      '<div class="row2">'+
+        '<div class="field"><label for="fMonthly">月の上限（任意）</label>'+
+          '<input type="number" id="fMonthly" min="0" step="1" value="'+esc(monthlyCap)+'" placeholder="4">'+
+          '<p class="hint">例：月4回まで。空欄なら上限なし。</p></div>'+
+        '<div class="field"><label for="fPeriod">契約期間（ヶ月・任意）</label>'+
+          '<input type="number" id="fPeriod" min="0" step="1" value="'+esc(periodMonths)+'" placeholder="12">'+
+          '<p class="hint">入れると契約日から有効期限を計算します。</p></div>'+
+      '</div>'+
+      '<div class="field"><label for="fOptions">このセットで選べる施術（1行に1つ）</label>'+
+        '<textarea id="fOptions" placeholder="ボディケア90分&#10;フェイシャルケア60分&#10;ヘッドスパ">'+esc(p?packOptions(p).join('\n'):'')+'</textarea>'+
+        '<p class="hint">ここに入れたメニューが「記録」タブに並び、当日受けたものを選べます。</p></div>'+
+    '</div>'+
+    '<div class="row2">'+
+      '<div class="field"><label for="fTotal">契約した回数</label>'+
+        '<input type="number" id="fTotal" min="1" step="1" value="'+(p?p.total:'')+'" placeholder="10"></div>'+
+      '<div class="field"><label for="fUnit">単位</label>'+
+        '<input type="text" id="fUnit" value="'+esc(unit)+'" placeholder="回">'+
+        '<div class="chips" style="margin-top:7px" id="unitQuick">'+
+          '<button class="chip" type="button" data-unit="回">回</button>'+
+          '<button class="chip" type="button" data-unit="本">本</button>'+
+          '<button class="chip" type="button" data-unit="個">個</button>'+
+          '<button class="chip" type="button" data-unit="箱">箱</button>'+
+        '</div></div>'+
+    '</div>'+
+    '<div class="row2">'+
+      '<div class="field"><label for="fStart">契約日</label>'+
+        '<input type="date" id="fStart" value="'+esc(p&&p.start?p.start:todayISO())+'"></div>'+
+      '<div class="field"><label for="fExp">有効期限（任意）</label>'+
+        '<input type="date" id="fExp" value="'+esc(p&&p.expiry?p.expiry:'')+'"></div>'+
+    '</div>'+
+    '<div class="field"><label for="fNote">メモ（任意）</label>'+
+      '<textarea id="fNote" placeholder="担当者・ペースの目安・店舗など">'+esc(p?p.note:'')+'</textarea></div>'+
+    '<div class="sheet__acts">'+
+      '<button class="btn btn--ghost" type="button" id="fCancel">やめる</button>'+
+      '<button class="btn" type="button" id="fSave">'+(p?'保存する':'登録する')+'</button>'+
+    '</div>'
+  );
+
+  var kindNow=kind,consumeNow=consume;
+  function applyKind(){
+    Array.prototype.forEach.call(document.querySelectorAll('#fKind button'),function(x){
+      x.setAttribute('aria-pressed',String(x.dataset.kind===kindNow));
+    });
+    $('#kindHint').textContent=KIND_HINT[kindNow]||'';
+    $('#packBox').hidden=kindNow!=='pack';
+    $('#pickCountField').hidden=consumeNow!=='item';
+    if(kindNow!=='supplement'){$('#fUnit').value='回'}
+    else if($('#fUnit').value==='回'){$('#fUnit').value='本'}
+  }
+  function applyConsume(){
+    Array.prototype.forEach.call(document.querySelectorAll('#fConsume button'),function(x){
+      x.setAttribute('aria-pressed',String(x.dataset.consume===consumeNow));
+    });
+    $('#consumeHint').textContent=CONSUME_HINT[consumeNow]||'';
+    applyPickMode();
+  }
+  function applyPickMode(){
+    Array.prototype.forEach.call(document.querySelectorAll('#fPickMode button'),function(x){
+      x.setAttribute('aria-pressed',String(x.dataset.pm===pickModeNow));
+    });
+    $('#pickCountField').hidden=(consumeNow==='visit'&&pickModeNow!=='exact');
+    $('#pickModeHint').textContent=pickModeNow==='exact'
+      ?'例）「2つ選択」の契約。記録のときにこの数ちょうど選ぶと保存できます。'
+      :'上限までの自由選択です。1つだけでも記録できます。';
+    $('#pickCountHint').textContent=pickModeNow==='exact'
+      ?'1回の来店で選ぶ個数（この数ちょうど選びます）。'
+      :(consumeNow==='item'?'この数まで選べます。':'「1来店＝1回消化」では消化数に影響しません。');
+  }
+  Array.prototype.forEach.call(document.querySelectorAll('#fKind button'),function(b){
+    b.addEventListener('click',function(){kindNow=b.dataset.kind;applyKind()});
+  });
+  Array.prototype.forEach.call(document.querySelectorAll('#fConsume button'),function(b){
+    b.addEventListener('click',function(){consumeNow=b.dataset.consume;applyConsume()});
+  });
+  Array.prototype.forEach.call(document.querySelectorAll('#fPickMode button'),function(b){
+    b.addEventListener('click',function(){pickModeNow=b.dataset.pm;applyPickMode()});
+  });
+  Array.prototype.forEach.call(document.querySelectorAll('#unitQuick button'),function(b){
+    b.addEventListener('click',function(){$('#fUnit').value=b.dataset.unit});
+  });
+  $('#fCancel').addEventListener('click',closeSheet);
+  $('#fSave').addEventListener('click',function(){
+    var name=$('#fName').value.trim();
+    var total=parseInt($('#fTotal').value,10);
+    if(!name){toast('メニュー名を入力してください');$('#fName').focus();return}
+    if(!total||total<1){toast('契約した回数を1以上で入力してください');$('#fTotal').focus();return}
+    var opts=[];
+    if(kindNow==='pack'){
+      opts=$('#fOptions').value.split('\n').map(function(s){return s.trim()}).filter(Boolean);
+      if(!opts.length){toast('「このセットで選べる施術」を1つ以上入力してください');$('#fOptions').focus();return}
+    }
+    var obj={
+      id:p?p.id:uid(),
+      name:name,
+      kind:kindNow,
+      total:total,
+      unit:(kindNow==='supplement'?($('#fUnit').value.trim()||'本'):'回'),
+      start:$('#fStart').value||todayISO(),
+      expiry:$('#fExp').value||'',
+      note:$('#fNote').value.trim()
+    };
+    if(kindNow==='pack'){
+      obj.consume=consumeNow;
+      obj.pickMode=pickModeNow;
+      obj.pickCount=parseInt($('#fPick').value,10)||0;
+      obj.monthlyCap=parseInt($('#fMonthly').value,10)||0;
+      obj.periodMonths=parseInt($('#fPeriod').value,10)||0;
+      obj.options=opts;
+      if(obj.periodMonths&&!obj.expiry)obj.expiry=addMonthsMinusDay(obj.start,obj.periodMonths);
+      if(obj.pickMode==='exact'&&!obj.pickCount){toast('1回に選ぶ個数を入力してください');$('#fPick').focus();return}
+    }
+    if(p){
+      for(var i=0;i<plans.length;i++){if(plans[i].id===p.id){plans[i]=obj;break}}
+    }else{
+      plans.push(obj);
+    }
+    if(obj.kind==='pack'&&!packSel[obj.id])packSel[obj.id]=[];
+    save();closeSheet();renderAll();
+    toast(p?'チケットを保存しました':'チケットを追加しました');
+  });
+  applyKind();applyConsume();applyPickMode();
+}
+
+function adjustSheet(id){
+  var p=planById(id);if(!p)return;
+  var used=consumed(p.id),rem=Math.max(0,remainOf(p));
+  openSheet('<h2 id="sheetTitle">残数を直す</h2>'+
+    '<p class="hint" style="margin-bottom:12px">'+esc(p.name)+'<br>契約 '+esc(p.total)+esc(p.unit||'回')+
+      ' ／ 消化済み '+used+esc(p.unit||'回')+' ／ いまののこり '+rem+esc(p.unit||'回')+'</p>'+
+    '<div class="field"><label for="aNow">実際ののこり数</label>'+
+      '<input type="number" id="aNow" min="0" step="1" value="'+rem+'">'+
+      '<p class="hint">サロンで確認した実際の残数を入れてください。差は「残数調整」として履歴に残り、消化数が自動で直ります。</p></div>'+
+    '<div class="field"><label for="aNote">メモ（任意）</label>'+
+      '<input type="text" id="aNote" value="サロンで残数確認"></div>'+
+    '<div class="sheet__acts">'+
+      '<button class="btn btn--ghost" type="button" id="aCancel">やめる</button>'+
+      '<button class="btn" type="button" id="aSave">この残数にする</button>'+
+    '</div>');
+  $('#aCancel').addEventListener('click',closeSheet);
+  $('#aSave').addEventListener('click',function(){
+    var want=parseInt($('#aNow').value,10);
+    if(isNaN(want)||want<0){toast('0以上の数を入力してください');return}
+    var diff=(Number(p.total)||0)-want-used;
+    if(!diff){closeSheet();toast('残数はすでに一致しています');return}
+    logs.push({id:uid(),date:todayISO(),note:$('#aNote').value.trim(),
+      items:[{planId:p.id,name:p.name,kind:p.kind,qty:diff,unit:p.unit||'回',adjust:true,to:want}]});
+    save();closeSheet();renderAll();toast('残数を '+want+(p.unit||'回')+' に合わせました');
+  });
+}
+
+/* ---------- events ---------- */
+function bind(){
+  Array.prototype.forEach.call(document.querySelectorAll('.tab'),function(b){
+    b.addEventListener('click',function(){go(b.dataset.view)});
+  });
+  $('#sheetWrap').addEventListener('click',function(e){if(e.target===$('#sheetWrap'))closeSheet()});
+  document.addEventListener('keydown',function(e){if(e.key==='Escape')closeSheet()});
+
+  $('#btnAddPlan').addEventListener('click',function(){planSheet(null)});
+
+  $('#ticketList').addEventListener('click',function(e){
+    var b=e.target.closest('button');if(!b)return;
+    if(b.dataset.adj){adjustSheet(b.dataset.adj);return}
+    if(b.dataset.edit){planSheet(b.dataset.edit);return}
+    if(b.dataset.use){
+      var p=planById(b.dataset.use);
+      if(p&&p.kind==='pack'){
+        packSelOf(p.id);
+        go('record');renderPacks();renderPreview();
+        toast('記録タブで、受けた施術を選んでください');
+        return;
+      }
+      draft[b.dataset.use]=1;
+      go('record');renderPicks();renderPreview();
+      toast('記録タブで日付を確認して保存してください');
+      return;
+    }
+    if(b.dataset.del){
+      var q=planById(b.dataset.del);
+      if(!confirm('「'+q.name+'」を削除します。よろしいですか？\n（すでに記録した来店履歴は残ります）'))return;
+      plans=plans.filter(function(x){return x.id!==q.id});
+      delete draft[q.id];
+      save();renderAll();toast('削除しました');
+    }
+  });
+
+  ['#pickTreat','#pickSup'].forEach(function(sel){
+    $(sel).addEventListener('click',function(e){
+      var b=e.target.closest('button');if(!b)return;
+      var id=b.dataset.inc||b.dataset.dec;
+      var p=planById(id);if(!p)return;
+      var rem=Math.max(0,remainOf(p));
+      var q=Number(draft[id])||0;
+      if(b.dataset.inc)q=Math.min(rem,q+1);
+      if(b.dataset.dec)q=Math.max(0,q-1);
+      draft[id]=q;
+      renderPicks();renderPreview();
+    });
+  });
+
+  $('#pickPack').addEventListener('click',function(e){
+    var b=e.target.closest('button.opt');if(!b)return;
+    var p=planById(b.dataset.pack);if(!p)return;
+    if(remainOf(p)<=0){toast('このセットは使い切りです');return}
+    var mcNow=Number(p.monthlyCap)||0;
+    if(mcNow&&packUsedThisMonth(p)>=mcNow&&packSelOf(p.id).length===0)toast('今月は上限（'+mcNow+'回）に達しています');
+    var sel=packSelOf(p.id),name=b.dataset.opt,idx=sel.indexOf(name);
+    if(idx>=0){sel.splice(idx,1)}
+    else{
+      var cap=Number(p.pickCount)||0;
+      if(cap&&sel.length>=cap){toast('このセットは1回に'+cap+'つまでです');return}
+      sel.push(name);
+    }
+    renderPacks();renderPreview();
+  });
+
+  var wInput=$('#recWeight');
+  if(wInput){
+    wInput.addEventListener('input',function(){renderPreview()});
+    wInput.addEventListener('change',function(){renderPreview()});
+  }
+
+  $('#btnSaveRec').addEventListener('click',function(){
+    var items=[],over=[];
+    var needFix=[],mcOver=[];
+    plans.forEach(function(p){
+      if(p.kind!=='pack')return;
+      var sel=packSelOf(p.id);if(!sel.length)return;
+      if(p.pickMode==='exact'&&Number(p.pickCount)&&sel.length!==Number(p.pickCount)){
+        needFix.push(p.name+'（'+sel.length+'/'+Number(p.pickCount)+'つ）');return;
+      }
+      var mc=Number(p.monthlyCap)||0;
+      if(mc&&packUsedThisMonth(p)>=mc){mcOver.push(p.name);return}
+      var q=packQty(p);if(q<=0)return;
+      items.push({planId:p.id,name:p.name,kind:'pack',qty:q,unit:p.unit||'回',sel:sel.slice()});
+      if(remainOf(p)-q<0)over.push(p.name);
+    });
+    Object.keys(draft).forEach(function(pid){
+      var q=Number(draft[pid])||0;if(q<=0)return;
+      var p=planById(pid);if(!p)return;
+      items.push({planId:p.id,name:p.name,kind:p.kind,qty:q,unit:p.unit||'回'});
+      if(remainOf(p)-q<0)over.push(p.name);
+    });
+    if(needFix.length){toast('個数が合いません：'+needFix.join('、'));return}
+    if(mcOver.length&&!confirm('今月の上限に達しています：'+mcOver.join('、')+'\nこのまま記録しますか？'))return;
+    var wEl=$('#recWeight'),wVal=wEl?parseFloat(wEl.value):NaN;
+    var hasW=isFinite(wVal)&&wVal>0;
+    if(!items.length&&!hasW){toast('受けた施術・サプリ、または体重を入力してください');return}
+    if(over.length&&!confirm('残数を超えて記録します：'+over.join('、')+'\nこのまま保存しますか？'))return;
+    var newLog={id:uid(),date:$('#recDate').value||todayISO(),items:items,note:$('#recNote').value.trim()};
+    if(hasW)newLog.w=wVal;
+    logs.push(newLog);
+    draft={};packSel={};$('#recNote').value='';$('#recDate').value=todayISO();
+    if(wEl)wEl.value='';
+    save();renderAll();go('stock');
+    toast('記録しました。残数を更新しました');
+  });
+
+  $('#logList').addEventListener('click',function(e){
+    var b=e.target.closest('button');if(!b||!b.dataset.logdel)return;
+    var log=null;logs.forEach(function(l){if(l.id===b.dataset.logdel)log=l});
+    if(!log)return;
+    if(!confirm(fmt(log.date)+' の記録を取り消します。この記録で減った残数は元に戻ります。よろしいですか？'))return;
+    logs=logs.filter(function(l){return l.id!==log.id});
+    save();renderAll();toast('取り消しました。残数を戻しました');
+  });
+
+  $('#btnShowJson').addEventListener('click',function(){
+    var box=$('#jsonBox');
+    jsonVisible=!jsonVisible;
+    box.hidden=!jsonVisible;
+    if(jsonVisible)box.value=JSON.stringify({plans:plans,logs:logs},null,1);
+    this.textContent=jsonVisible?'閉じる':'テキストで表示・コピー';
+  });
+  $('#jsonBox').addEventListener('click',function(){this.select()});
+
+  $('#btnExportFile').addEventListener('click',function(){
+    var data=JSON.stringify({app:'kai-toroku',ver:2,savedAt:new Date().toISOString(),plans:plans,logs:logs},null,1);
+    try{
+      var blob=new Blob([data],{type:'application/json'});
+      var a=document.createElement('a');
+      a.href=URL.createObjectURL(blob);
+      a.download='kai-toroku-'+todayISO()+'.json';
+      document.body.appendChild(a);a.click();
+      setTimeout(function(){URL.revokeObjectURL(a.href);a.remove()},1500);
+      ioMsg('ダウンロードフォルダに保存しました（'+a.download+'）');
+    }catch(err){
+      $('#jsonBox').hidden=false;jsonVisible=true;
+      $('#jsonBox').value=data;$('#btnShowJson').textContent='閉じる';
+      ioMsg('この環境では保存できないため、上の欄に出力しました。内容をコピーしてください',true);
+    }
+  });
+
+  function ioMsg(msg,bad){
+    var el=$('#ioMsg');
+    if(el){el.textContent=msg;el.style.color=bad?'#eab5a5':'var(--brass-2)'}
+    toast(msg);
+  }
+  function doImport(text,fromFile){
+    var t=String(text==null?'':text).trim();
+    if(!t){ioMsg('中身が空でした',true);return}
+    if(/^<!doctype/i.test(t)||/^<html/i.test(t)||/回数台帳/i.test(t.slice(0,400))&&/^\s*</.test(t)){
+      ioMsg('これはアプリ本体（HTML）のようです。バックアップのJSONファイルを選んでください',true);return;
+    }
+    var d;
+    try{d=JSON.parse(t)}
+    catch(err){ioMsg('JSONとして読めませんでした。コピーの範囲が途中で切れていないか確認してください',true);return}
+    var pl=d&&d.plans?d.plans:(Array.isArray(d)?d:null);
+    if(!Array.isArray(pl)){ioMsg('バックアップの形式ではありません（plans が見つかりません）',true);return}
+    if(!pl.length&&!confirm('契約が0件のバックアップです。読み込むと、いまのデータが空になります。続けますか？'))return;
+    plans=pl;logs=Array.isArray(d.logs)?d.logs:[];
+    draft={};packSel={};save();renderAll();
+    if(!fromFile)go('stock');
+    ioMsg('読み込みました：契約'+plans.length+'件・履歴'+logs.length+'件');
+  }
+  $('#btnImport').addEventListener('click',function(){
+    var box=$('#jsonBox');
+    if(box.hidden||!box.value.trim()){
+      box.hidden=false;jsonVisible=true;$('#btnShowJson').textContent='閉じる';
+      ioMsg('上の欄にバックアップの内容を貼り付けて、もう一度このボタンを押してください',true);
+      box.focus();
+      return;
+    }
+    doImport(box.value,false);
+  });
+  $('#fileImport').addEventListener('change',function(){
+    var f=this.files&&this.files[0];if(!f)return;
+    if(/\.html?$/i.test(f.name)){ioMsg('それはアプリ本体（HTML）です。同じフォルダにあるJSONファイルを選んでください',true);this.value='';return}
+    var r=new FileReader();
+    r.onload=function(){doImport(String(r.result),true)};
+    r.readAsText(f);
+  });
+
+  $('#btnSample').addEventListener('click',function(){
+    if(plans.length&&!confirm('いま登録されている契約・履歴を記入例で置き換えます。よろしいですか？'))return;
+    plans=[
+      {id:'g1',name:'ボディケア90分',kind:'treatment',total:10,unit:'回',start:'2026-04-05',expiry:'2027-04-04',note:'月2回ペースで通っています。'},
+      {id:'g2',name:'フェイシャルケア60分',kind:'treatment',total:6,unit:'回',start:'2026-06-13',expiry:'',note:''},
+      {id:'g3',name:'ヘッドスパ',kind:'treatment',total:3,unit:'回',start:'2026-08-01',expiry:'',note:'気分転換に。'},
+      {id:'g4',name:'サプリA（記入例）',kind:'supplement',total:12,unit:'個',start:'2026-06-13',expiry:'2027-06-12',note:''},
+      {id:'g5',name:'セレクトコース（記入例）',kind:'pack',total:12,unit:'回',start:'2026-05-09',expiry:'2027-05-08',note:'月4回まで。1回に2つ選択。',consume:'visit',pickMode:'exact',pickCount:2,monthlyCap:4,
+        options:['ボディケア90分','フェイシャルケア60分','ヘッドスパ','アロマトリートメント','足つぼケア']},
+      {id:'g6',name:'通いセット（記入例）',kind:'pack',total:10,unit:'回',start:'2026-07-11',expiry:'',note:'選んだ数だけ消化するタイプ。',consume:'item',pickMode:'upto',pickCount:3,monthlyCap:0,
+        options:['ボディケア60分','ストレッチ','骨盤ケア']}
+    ];
+    logs=[
+      {id:'h1',date:'2026-09-05',w:67.8,items:[{planId:'g1',name:'ボディケア90分',kind:'treatment',qty:1,unit:'回'},{planId:'g4',name:'サプリA（記入例）',kind:'supplement',qty:1,unit:'個'}],note:''},
+      {id:'h2',date:'2026-08-22',w:68.2,items:[{planId:'g5',name:'セレクトコース（記入例）',kind:'pack',qty:1,unit:'回',sel:['ボディケア90分','ヘッドスパ']}],note:'記入例：2つ選択。'},
+      {id:'h3',date:'2026-08-08',w:68.6,items:[{planId:'g6',name:'通いセット（記入例）',kind:'pack',qty:2,unit:'回',sel:['ボディケア60分','ストレッチ']},{planId:'g4',name:'サプリA（記入例）',kind:'supplement',qty:1,unit:'個'}],note:'記入例：2つ受けて2回消化。'},
+      {id:'h4',date:'2026-07-25',items:[{planId:'g2',name:'フェイシャルケア60分',kind:'treatment',qty:1,unit:'回'}],note:''},
+      {id:'h5',date:'2026-07-11',items:[{planId:'g3',name:'ヘッドスパ',kind:'treatment',qty:1,unit:'回'}],note:''},
+      {id:'h6',date:'2026-06-13',items:[{planId:'g1',name:'ボディケア90分',kind:'treatment',qty:2,unit:'回'},{planId:'g4',name:'サプリA（記入例）',kind:'supplement',qty:2,unit:'個'}],note:'記入例：2回分まとめて消化。'}
+    ];
+    draft={};packSel={};save();renderAll();
+    toast('記入例を入れました（あなたの契約内容に書き換えてください）');
+  });
+
+  $('#btnWipe').addEventListener('click',function(){
+    if(!confirm('契約チケットと履歴をすべて削除します。元に戻せません。よろしいですか？'))return;
+    plans=[];logs=[];draft={};packSel={};save();renderAll();go('stock');toast('全データを削除しました');
+  });
+}
+
+function seedMine(){return;}
+
+load();
+bind();
+renderAll();
+$('#recDate').value=todayISO();
+})();
+</script>
+<script>
+if('serviceWorker' in navigator && location.protocol==='https:'){
+  window.addEventListener('load',function(){navigator.serviceWorker.register('./sw.js').catch(function(){})});
+}
+</script>
+</body>
+</html>
