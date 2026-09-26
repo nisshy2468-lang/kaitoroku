@@ -5,8 +5,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#191512">
 <title>回数台帳｜回数券・セット契約の残数管理</title>
-<link rel="manifest" href="manifest.webmanifest">
-<link rel="apple-touch-icon" href="icon-192.png">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ccircle cx='32' cy='32' r='30' fill='%23b4442c'/%3E%3Ctext x='32' y='45' font-size='38' font-family='serif' font-weight='700' text-anchor='middle' fill='%23fbf3e4'%3E%E6%AE%8B%3C/text%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -558,7 +556,7 @@ input:focus,textarea:focus,select:focus,button:focus-visible,a:focus-visible{out
 (function(){
 'use strict';
 var KEY='kaitoroku-v1';
-var APP_VER='2.0';
+var APP_VER='2.1';
 var APP_VER_DATE='2026-09-26';
 var $=function(s){return document.querySelector(s)};
 var plans=[],logs=[],draft={},packSel={},storageOK=true,jsonVisible=false;
@@ -619,14 +617,27 @@ function addMonthsMinusDay(iso,m){
 /* ---------- storage ---------- */
 function save(){
   if(!storageOK)return;
-  try{localStorage.setItem(KEY,JSON.stringify({plans:plans,logs:logs}))}
+  try{localStorage.setItem(KEY,JSON.stringify({ver:3,plans:plans,logs:logs}))}
   catch(e){storageOK=false;renderStorage()}
+}
+function migratePacks(list){
+  var flipped=[];
+  (list||[]).forEach(function(p){
+    if(p&&p.kind==='pack'&&p.pickMode==='exact'){p.pickMode='upto';flipped.push(p.name)}
+  });
+  return flipped;
 }
 function load(){
   try{
     localStorage.setItem(KEY+'__t','1');localStorage.removeItem(KEY+'__t');
     var raw=localStorage.getItem(KEY);
-    if(raw){var d=JSON.parse(raw);plans=d.plans||[];logs=d.logs||[]}
+    if(raw){
+      var d=JSON.parse(raw);plans=d.plans||[];logs=d.logs||[];
+      if(!(d.ver>=3)){
+        var fl=migratePacks(plans);
+        if(fl.length){save();setTimeout(function(){toast('「'+fl.join('」「')+'」の選び方を「上限までの自由選択（◯つまで）」に変更しました')},1200)}
+      }
+    }
   }catch(e){storageOK=false}
 }
 function renderVer(){
@@ -729,7 +740,7 @@ function renderTickets(){
       var pc=Number(p.pickCount)||0;
       howTo='<br>'+(p.pickMode==='exact'
         ?('1回に'+(pc||'—')+'つ選択（この数ちょうど）')
-        :(p.consume==='item'?('1回の来店で'+(pc||'—')+'つまで選択'):'選ぶ数は自由'));
+        :(pc?('1回に'+pc+'つまで選択'):'選ぶ数は自由'));
       howTo+=(p.consume==='item'?'／選んだ数だけ消化':'／1来店＝1回消化');
       if(mc){
         howTo+='／月'+mc+'回まで';
@@ -821,6 +832,10 @@ function renderPacks(){
         howMany=cap
           ?(sel.length<cap?'受けたい施術をタップで選択（あと'+(cap-sel.length)+'つ選べます）':'受けたい施術をタップで選択（上限まで選択済み）')
           :'受けたい施術をタップで選択（個数の上限が未設定です）';
+      }else if(cap){
+        howMany=sel.length<cap
+          ?('受けたい施術をタップで選択（1回に'+cap+'つまで。あと'+(cap-sel.length)+'つ選べます）')
+          :('受けたい施術をタップで選択（1回に'+cap+'つまで選択済み）');
       }else{
         howMany='受けたい施術をタップで選択（いくつ受けても消化は1回です）';
       }
@@ -832,7 +847,7 @@ function renderPacks(){
         '<div class="pack__info">'+
           '<div class="pack__name">'+esc(p.name)+'</div>'+
           '<div class="pack__meta">のこり '+(rem<=0?'<b>0</b>':rem)+' '+esc(p.unit||'回')+' ・ '+
-            (p.pickMode==='exact'?('1回に'+(cap||'—')+'つ選択'):'選ぶ数は自由')+'／'+
+            (p.pickMode==='exact'?('1回に'+(cap||'—')+'つ選択'):(cap?('1回に'+cap+'つまで選択'):'選ぶ数は自由'))+'／'+
             (p.consume==='item'?'選んだ数だけ消化':'1来店＝1回消化')+
             (mc?('／月'+mc+'回まで（今月 '+thisMonth+'）'):'')+
           '</div>'+
@@ -1143,7 +1158,7 @@ function planSheet(id){
         '<button type="button" data-pm="exact" aria-pressed="'+(pickMode==='exact')+'">決まった個数をちょうど</button>'+
         '<button type="button" data-pm="upto" aria-pressed="'+(pickMode==='upto')+'">上限までの自由選択</button>'+
       '</div><p class="hint" id="pickModeHint"></p></div>'+
-      '<div class="field" id="pickCountField"><label for="fPick">1回に選ぶ個数</label>'+
+      '<div class="field" id="pickCountField"><label for="fPick" id="fPickLabel">1回に選ぶ個数</label>'+
         '<input type="number" id="fPick" min="1" step="1" value="'+(p&&p.pickCount?p.pickCount:'3')+'">'+
         '<p class="hint" id="pickCountHint"></p></div>'+
       '<div class="row2">'+
@@ -1191,7 +1206,7 @@ function planSheet(id){
     });
     $('#kindHint').textContent=KIND_HINT[kindNow]||'';
     $('#packBox').hidden=kindNow!=='pack';
-    $('#pickCountField').hidden=consumeNow!=='item';
+    $('#pickCountField').hidden=kindNow!=='pack';
     if(kindNow!=='supplement'){$('#fUnit').value='回'}
     else if($('#fUnit').value==='回'){$('#fUnit').value='本'}
   }
@@ -1206,13 +1221,14 @@ function planSheet(id){
     Array.prototype.forEach.call(document.querySelectorAll('#fPickMode button'),function(x){
       x.setAttribute('aria-pressed',String(x.dataset.pm===pickModeNow));
     });
-    $('#pickCountField').hidden=(consumeNow==='visit'&&pickModeNow!=='exact');
+    $('#pickCountField').hidden=(kindNow!=='pack');
+    $('#fPickLabel').textContent=pickModeNow==='exact'?'1回に選ぶ個数（この数ちょうど）':'1回に選べる数の上限';
     $('#pickModeHint').textContent=pickModeNow==='exact'
       ?'例）「2つ選択」の契約。記録のときにこの数ちょうど選ぶと保存できます。'
-      :'上限までの自由選択です。1つだけでも記録できます。';
+      :'「◯つまで」の契約はこちら。この数まで選べて、1つだけでも記録できます。';
     $('#pickCountHint').textContent=pickModeNow==='exact'
       ?'1回の来店で選ぶ個数（この数ちょうど選びます）。'
-      :(consumeNow==='item'?'この数まで選べます。':'「1来店＝1回消化」では消化数に影響しません。');
+      :(consumeNow==='item'?'この数まで選べます。選んだ数だけ消化します。':'この数まで選べます（上限）。何個受けても消化は1回のまま。');
   }
   Array.prototype.forEach.call(document.querySelectorAll('#fKind button'),function(b){
     b.addEventListener('click',function(){kindNow=b.dataset.kind;applyKind()});
@@ -1423,7 +1439,7 @@ function bind(){
   $('#jsonBox').addEventListener('click',function(){this.select()});
 
   $('#btnExportFile').addEventListener('click',function(){
-    var data=JSON.stringify({app:'kai-toroku',ver:2,savedAt:new Date().toISOString(),plans:plans,logs:logs},null,1);
+    var data=JSON.stringify({app:'kai-toroku',ver:3,savedAt:new Date().toISOString(),plans:plans,logs:logs},null,1);
     try{
       var blob=new Blob([data],{type:'application/json'});
       var a=document.createElement('a');
@@ -1457,9 +1473,10 @@ function bind(){
     if(!Array.isArray(pl)){ioMsg('バックアップの形式ではありません（plans が見つかりません）',true);return}
     if(!pl.length&&!confirm('契約が0件のバックアップです。読み込むと、いまのデータが空になります。続けますか？'))return;
     plans=pl;logs=Array.isArray(d.logs)?d.logs:[];
+    var flOld=(d&&d.ver>=3)?[]:migratePacks(plans);
     draft={};packSel={};save();renderAll();
     if(!fromFile)go('stock');
-    ioMsg('読み込みました：契約'+plans.length+'件・履歴'+logs.length+'件');
+    ioMsg('読み込みました：契約'+plans.length+'件・履歴'+logs.length+'件'+(flOld.length?('／「'+flOld.join('」「')+'」を「上限までの選択」に変更'):''));
   }
   $('#btnImport').addEventListener('click',function(){
     var box=$('#jsonBox');
@@ -1486,7 +1503,7 @@ function bind(){
       {id:'g2',name:'フェイシャルケア60分',kind:'treatment',total:6,unit:'回',start:'2026-06-13',expiry:'',note:''},
       {id:'g3',name:'ヘッドスパ',kind:'treatment',total:3,unit:'回',start:'2026-08-01',expiry:'',note:'気分転換に。'},
       {id:'g4',name:'サプリA（記入例）',kind:'supplement',total:12,unit:'個',start:'2026-06-13',expiry:'2027-06-12',note:''},
-      {id:'g5',name:'セレクトコース（記入例）',kind:'pack',total:12,unit:'回',start:'2026-05-09',expiry:'2027-05-08',note:'月4回まで。1回に2つ選択。',consume:'visit',pickMode:'exact',pickCount:2,monthlyCap:4,
+      {id:'g5',name:'セレクトコース（記入例）',kind:'pack',total:12,unit:'回',start:'2026-05-09',expiry:'2027-05-08',note:'月4回まで。1回に2つまで選択。',consume:'visit',pickMode:'upto',pickCount:2,monthlyCap:4,
         options:['ボディケア90分','フェイシャルケア60分','ヘッドスパ','アロマトリートメント','足つぼケア']},
       {id:'g6',name:'通いセット（記入例）',kind:'pack',total:10,unit:'回',start:'2026-07-11',expiry:'',note:'選んだ数だけ消化するタイプ。',consume:'item',pickMode:'upto',pickCount:3,monthlyCap:0,
         options:['ボディケア60分','ストレッチ','骨盤ケア']}
@@ -1516,11 +1533,6 @@ bind();
 renderAll();
 $('#recDate').value=todayISO();
 })();
-</script>
-<script>
-if('serviceWorker' in navigator && location.protocol==='https:'){
-  window.addEventListener('load',function(){navigator.serviceWorker.register('./sw.js').catch(function(){})});
-}
 </script>
 </body>
 </html>
