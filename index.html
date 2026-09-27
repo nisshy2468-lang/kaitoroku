@@ -289,9 +289,9 @@ table.rep__t{border-collapse:collapse;font-size:11px;min-width:100%}
   #printArea table.rep__t .rep__rem{background:#f0ead9!important;font-weight:700}
   #printArea table.rep__t thead{display:table-header-group}
   #printArea table.rep__t tr{break-inside:avoid}
-  #printArea table.rep__t.rep__tight thead th.rep__grp--one,
   #printArea table.rep__t.rep__tight thead tr:nth-child(2) th{
     writing-mode:vertical-rl;text-orientation:mixed;height:132px;font-size:6.4pt;padding:2px 0}
+
 }
 .an-note{font-size:11px;color:var(--mute);margin:9px 0 0;line-height:1.7}
 .an-warn{color:var(--vermilion);font-weight:700}
@@ -602,7 +602,7 @@ table.rep__t{border-collapse:collapse;font-size:11px;min-width:100%}
 (function(){
 'use strict';
 var KEY='kaitoroku-v1';
-var APP_VER='2.3';
+var APP_VER='2.4';
 var APP_VER_DATE='2026-09-26';
 var $=function(s){return document.querySelector(s)};
 var plans=[],logs=[],draft={},packSel={},storageOK=true,jsonVisible=false;
@@ -1179,13 +1179,23 @@ function reportModel(){
     return as<bs?-1:(as>bs?1:0);
   });
   var groups=[],cols=[];
+  var packs=[],treats=[],sups=[];
   plist.forEach(function(p){
-    var names=[];
-    if(p.kind==='pack'&&packOptions(p).length){names=packOptions(p).slice()}
-    else{names=[p.name]}
+    if(p.kind==='pack')packs.push(p);
+    else if(p.kind==='supplement')sups.push(p);
+    else treats.push(p);
+  });
+  packs.forEach(function(p){
+    var names=packOptions(p).length?packOptions(p).slice():[p.name];
     if(!names.length)return;
-    groups.push({plan:p,names:names});
-    names.forEach(function(nm){cols.push({plan:p,name:nm,first:nm===names[0],key:p.id+'|'+nm})});
+    groups.push({label:p.name,names:names});
+    names.forEach(function(nm,i){cols.push({plan:p,name:nm,first:i===0,home:i===0,key:p.id+'|'+nm})});
+  });
+  [['施術',treats],['サプリ',sups]].forEach(function(pair){
+    var label=pair[0],arr=pair[1];
+    if(!arr.length)return;
+    groups.push({label:label,names:arr.map(function(p){return p.name})});
+    arr.forEach(function(p,i){cols.push({plan:p,name:p.name,first:i===0,home:true,key:p.id+'|'+p.name})});
   });
   var rows=evs.map(function(e){
     var marks={},qty=0;
@@ -1209,46 +1219,32 @@ function renderReport(){
     box.innerHTML='<p class="hint" style="padding:12px;margin:0">まだ記録がないため、実績表は空です。「記録」タブで来店を保存すると、ここに来店×メニューの表が出ます。</p>';
     return;
   }
-  var multi=m.groups.filter(function(g){return g.names.length>1});
-  var two=multi.length?2:1;
   var tight=m.cols.length>14;
-  var head1='<th rowspan="'+two+'">月</th><th rowspan="'+two+'">回</th>'+
-    '<th rowspan="'+two+'">施術日</th><th rowspan="'+two+'">消化</th>'+
-    m.groups.map(function(g){
-      return g.names.length>1
-        ? '<th colspan="'+g.names.length+'" class="rep__grp">'+esc(g.plan.name)+'</th>'
-        : '<th rowspan="'+two+'" class="rep__grp rep__grp--one">'+esc(g.plan.name)+'</th>';
-    }).join('');
-  var head2=multi.length?multi.map(function(g){
-    return g.names.map(function(n){return '<th>'+esc(n)+'</th>'}).join('');
-  }).join(''):'';
+  var head1='<th rowspan="2">月</th><th rowspan="2">回</th><th rowspan="2">施術日</th><th rowspan="2">消化</th>'+
+    m.groups.map(function(g){return '<th colspan="'+g.names.length+'" class="rep__grp">'+esc(g.label)+'</th>'}).join('');
+  var head2=m.cols.map(function(c){return '<th>'+esc(c.name)+'</th>'}).join('');
   box.innerHTML='<table class="rep__t'+(tight?' rep__tight':'')+'">'+
     '<colgroup><col style="width:7%"><col style="width:3.5%"><col style="width:8.5%"><col style="width:4%">'+
       m.cols.map(function(){return '<col>'}).join('')+'</colgroup>'+
-    '<thead><tr>'+head1+'</tr>'+(head2?('<tr>'+head2+'</tr>'):'')+'</thead><tbody>'+
+    '<thead><tr>'+head1+'</tr><tr>'+head2+'</tr></thead><tbody>'+
     m.rows.map(function(r){
       return '<tr><th>'+monthKey(r.date)+'</th><th>'+r.n+'</th><th>'+fmt(r.date)+'</th><th>'+r.qty+'</th>'+
         m.cols.map(function(c){return '<td'+(r.marks[c.key]?' class="rep__mark"':'')+'>'+(r.marks[c.key]?'○':'')+'</td>'}).join('')+'</tr>';
     }).join('')+
     '<tr><th class="rep__rem" colspan="4">残数</th>'+
-      m.cols.map(function(c){return '<td class="rep__rem">'+(c.first?String(Math.max(0,remainOf(c.plan))):'')+'</td>'}).join('')+
+      m.cols.map(function(c){return '<td class="rep__rem">'+(c.home?String(Math.max(0,remainOf(c.plan))):'')+'</td>'}).join('')+
     '</tr></tbody></table>';
 }
 function reportCsv(){
   var m=reportModel(),out=[];
-  var r1=['','','',''];
-  m.groups.forEach(function(g){g.names.forEach(function(n,i){r1.push(i===0?g.plan.name:'')})});
-  out.push(r1);
-  var r2=[];
-  m.groups.forEach(function(g){
-    if(g.names.length>1){g.names.forEach(function(n){r2.push(n)})}
-    else{r2.push('')}
-  });
-  out.push(['月','回','施術日','消化'].concat(r2));
+  var r1=[];
+  m.groups.forEach(function(g){g.names.forEach(function(n,i){r1.push(i===0?g.label:'')})});
+  out.push(['','','',''].concat(r1));
+  out.push(['月','回','施術日','消化'].concat(m.cols.map(function(c){return c.name})));
   m.rows.forEach(function(r){
     out.push([monthKey(r.date),r.n,fmt(r.date),r.qty].concat(m.cols.map(function(c){return r.marks[c.key]?'○':''})));
   });
-  out.push(['残数','','',''].concat(m.cols.map(function(c){return c.first?String(Math.max(0,remainOf(c.plan))):''})));
+  out.push(['残数','','',''].concat(m.cols.map(function(c){return c.home?String(Math.max(0,remainOf(c.plan))):''})));
   return '\ufeff'+out.map(function(r){return r.map(repEscapeCsv).join(',')}).join('\r\n');
 }
 function repMsg(msg,bad){
