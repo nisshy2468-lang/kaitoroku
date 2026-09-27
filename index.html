@@ -260,6 +260,29 @@ input:focus,textarea:focus,select:focus,button:focus-visible,a:focus-visible{out
 .an-line{display:flex;justify-content:space-between;gap:10px;font-size:12.5px;line-height:1.8;border-top:1px solid rgba(201,162,77,.14);padding:5px 0}
 .an-line:first-child{border-top:0}
 .an-line b{font-family:var(--font-m);color:#fbf3e4}
+
+/* ---------- 実績表 ---------- */
+#printArea{display:none}
+.rep .hint{margin:10px 0 0}
+.rep__scroll{overflow-x:auto;-webkit-overflow-scrolling:touch;border:1px solid rgba(201,162,77,.28);border-radius:8px;margin-top:4px;background:rgba(0,0,0,.18)}
+table.rep__t{border-collapse:collapse;font-size:11px;min-width:100%}
+.rep__t th,.rep__t td{border:1px solid rgba(201,162,77,.22);padding:3px 7px;white-space:nowrap;text-align:center;color:var(--paper)}
+.rep__t thead tr:first-child th{background:rgba(201,162,77,.16);color:var(--brass-2);font-size:10.5px;font-weight:600}
+.rep__t thead tr:last-child th{background:rgba(255,255,255,.05);color:var(--brass-2);font-size:10.5px;font-weight:500;max-width:104px;word-break:break-word;white-space:normal}
+.rep__t tbody th{background:rgba(255,255,255,.04);color:var(--mute);font-weight:400;font-family:var(--font-m)}
+.rep__t .rep__mark{color:#fbf3e4;font-weight:600;font-size:12.5px}
+.rep__t .rep__rem{background:rgba(201,162,77,.16);font-family:var(--font-m);color:#fbf3e4;font-weight:600}
+@media print{
+  @page{size:A4 landscape;margin:8mm}
+  body>*{display:none!important}
+  #printArea{display:block!important;color:#000}
+  #printArea h1{font-size:12pt;margin:0 0 4mm;font-weight:600}
+  #printArea .rep__scroll{overflow:visible;border:0;border-radius:0;background:none}
+  #printArea table.rep__t{width:100%;font-size:7.5pt;border-collapse:collapse;min-width:0}
+  #printArea table.rep__t th,#printArea table.rep__t td{border:1px solid #666;padding:1px 3px;color:#000!important;background:#fff!important;white-space:normal;text-align:center}
+  #printArea table.rep__t thead tr:first-child th,#printArea table.rep__t thead tr:last-child th{background:#eee!important;font-weight:700}
+  #printArea table.rep__t .rep__rem{background:#f0ead9!important;font-weight:700}
+}
 .an-note{font-size:11px;color:var(--mute);margin:9px 0 0;line-height:1.7}
 .an-warn{color:var(--vermilion);font-weight:700}
 .log__weight{display:inline-block;margin:9px 0 0;font-family:var(--font-m);font-size:11.5px;color:var(--sumi-2);background:rgba(255,255,255,.55);border-radius:99px;padding:3px 10px}
@@ -450,6 +473,18 @@ input:focus,textarea:focus,select:focus,button:focus-visible,a:focus-visible{out
 
     <div class="head"><h2>体重の変化<span>記録から</span></h2></div>
     <div class="wcard" id="anWeight"></div>
+
+    <div class="head"><h2>実績表<span>来店×メニュー</span></h2></div>
+    <div class="card rep">
+      <h3>実績表を書き出す</h3>
+      <p>来店ごと（月内1回目〜）に受けたメニューを○で並べた表です。下に契約ごとの残数が付きます。Excelで開ける形式（CSV）と、印刷／PDF保存ができます。</p>
+      <div class="rep__scroll" id="repBox"></div>
+      <div class="stack" style="margin-top:12px">
+        <button class="btn btn--ghost" id="btnRepCsv" type="button">Excel用CSVで書き出す</button>
+        <button class="btn btn--ghost" id="btnRepPrint" type="button">印刷／PDFに保存</button>
+      </div>
+      <p class="hint" id="repMsg">—</p>
+    </div>
   </section>
 
   <!-- ============ 設定 ============ -->
@@ -508,7 +543,7 @@ input:focus,textarea:focus,select:focus,button:focus-visible,a:focus-visible{out
       <b>④残数</b>　「残数」タブの台紙に残りと消化済みの穴が並びます。追加契約したときは、同じ名前でもう1枚足すか、編集で回数を書き換えます。<br><br>
       <b>⑤残数を直す</b>　サロンで確認した実際の残数がわかったら、チケットの「残数を直す」に入力します。差は「残数調整」として履歴に残り、あとから見返せます。<br><br>
       <b>⑥体重</b>　「記録」タブの体重欄に入れて保存すると、履歴タブの上に最新の体重・前回比・推移グラフが出ます。施術を受けない日でも、体重だけの記録ができます。<br><br>
-      <b>⑦分析</b>　「分析」タブに、来店回数・平均間隔、月別の来店と消化、セットの月上限の使用状況、使い切りの見通し（このペースで何日か・期限に足りるか）、よく受けているメニュー、体重の変化がまとまります。</p>
+      <b>⑦分析</b>　「分析」タブに、来店回数・平均間隔、月別の来店と消化、セットの月上限の使用状況、使い切りの見通し（このペースで何日か・期限に足りるか）、よく受けているメニュー、体重の変化がまとまります。<br><br><b>⑧実績表</b>　「分析」タブの一番下から、来店ごとに受けたメニューを○で並べた表を書き出せます。Excelで開けるCSVと、印刷／PDF保存に対応しています。表の下の「残数」が、いまの契約ごとの残りです。</p>
     </div>
 
     <div class="card">
@@ -556,7 +591,7 @@ input:focus,textarea:focus,select:focus,button:focus-visible,a:focus-visible{out
 (function(){
 'use strict';
 var KEY='kaitoroku-v1';
-var APP_VER='2.1';
+var APP_VER='2.2';
 var APP_VER_DATE='2026-09-26';
 var $=function(s){return document.querySelector(s)};
 var plans=[],logs=[],draft={},packSel={},storageOK=true,jsonVisible=false;
@@ -1111,7 +1146,91 @@ function syncPresets(){
   dl.innerHTML=out.slice(0,60).map(function(n){return '<option value="'+esc(n)+'"></option>'}).join('');
 }
 
-function renderAll(){syncPresets();renderTop();renderTickets();renderPicks();renderPacks();renderPreview();renderLogs();renderWeight();renderAnalytics();updateWeightHint();renderStorage();renderVer()}
+/* ---------- 実績表 ---------- */
+function repEscapeCsv(v){
+  v=String(v==null?'':v);
+  return /[",\n\r]/.test(v)?('"'+v.replace(/"/g,'""')+'"'):v;
+}
+function reportModel(){
+  var evs=[];
+  logs.forEach(function(l){
+    var items=(l.items||[]).filter(function(it){return !it.adjust});
+    if(!items.length)return;
+    evs.push({date:l.date||'',items:items});
+  });
+  evs.sort(function(a,b){return a.date<b.date?-1:(a.date>b.date?1:0)});
+  var mc={};
+  evs.forEach(function(e){var m=monthKey(e.date);mc[m]=(mc[m]||0)+1;e.n=mc[m]});
+  var rank={pack:0,treatment:1,supplement:2};
+  var plist=plans.slice().sort(function(a,b){
+    if(a.kind!==b.kind)return (rank[a.kind]||0)-(rank[b.kind]||0);
+    var as=String(a.start||''),bs=String(b.start||'');
+    return as<bs?-1:(as>bs?1:0);
+  });
+  var groups=[],cols=[];
+  plist.forEach(function(p){
+    var names=[];
+    if(p.kind==='pack'&&packOptions(p).length){names=packOptions(p).slice()}
+    else{names=[p.name]}
+    if(!names.length)return;
+    groups.push({plan:p,names:names});
+    names.forEach(function(nm){cols.push({plan:p,name:nm,first:nm===names[0],key:p.id+'|'+nm})});
+  });
+  var rows=evs.map(function(e){
+    var marks={},qty=0;
+    e.items.forEach(function(it){
+      qty+=Number(it.qty)||0;
+      var p=planById(it.planId);
+      if(it.sel&&it.sel.length){it.sel.forEach(function(s){marks[it.planId+'|'+s]=1})}
+      else{
+        marks[it.planId+'|'+(p?p.name:it.name)]=1;
+        if(p&&p.kind==='pack'){packOptions(p).forEach(function(o){marks[it.planId+'|'+o]=1})}
+      }
+    });
+    return {date:e.date,n:e.n,qty:qty,marks:marks};
+  });
+  return {groups:groups,cols:cols,rows:rows};
+}
+function renderReport(){
+  var box=$('#repBox');if(!box)return;
+  var m=reportModel();
+  if(!m.rows.length){
+    box.innerHTML='<p class="hint" style="padding:12px;margin:0">まだ記録がないため、実績表は空です。「記録」タブで来店を保存すると、ここに来店×メニューの表が出ます。</p>';
+    return;
+  }
+  var h='<table class="rep__t"><thead>'+
+    '<tr><th colspan="4">契約</th>'+
+      m.groups.map(function(g){return '<th colspan="'+g.names.length+'">'+esc(g.plan.name)+'</th>'}).join('')+'</tr>'+
+    '<tr><th>月</th><th>回</th><th>施術日</th><th>消化</th>'+
+      m.cols.map(function(c){return '<th>'+esc(c.name)+'</th>'}).join('')+'</tr>'+
+    '</thead><tbody>'+
+    m.rows.map(function(r){
+      return '<tr><th>'+monthKey(r.date)+'</th><th>'+r.n+'</th><th>'+fmt(r.date)+'</th><th>'+r.qty+'</th>'+
+        m.cols.map(function(c){return '<td'+(r.marks[c.key]?' class="rep__mark"':'')+'>'+(r.marks[c.key]?'○':'')+'</td>'}).join('')+'</tr>';
+    }).join('')+
+    '<tr><th>残数</th><th></th><th></th><th></th>'+
+      m.cols.map(function(c){return '<td class="rep__rem">'+(c.first?String(Math.max(0,remainOf(c.plan))):'')+'</td>'}).join('')+
+    '</tr></tbody></table>';
+  box.innerHTML=h;
+}
+function reportCsv(){
+  var m=reportModel(),out=[];
+  var r1=['','','',''];
+  m.groups.forEach(function(g){g.names.forEach(function(n,i){r1.push(i===0?g.plan.name:'')})});
+  out.push(r1);
+  out.push(['月','回','施術日','消化'].concat(m.cols.map(function(c){return c.name})));
+  m.rows.forEach(function(r){
+    out.push([monthKey(r.date),r.n,fmt(r.date),r.qty].concat(m.cols.map(function(c){return r.marks[c.key]?'○':''})));
+  });
+  out.push(['残数','','',''].concat(m.cols.map(function(c){return c.first?String(Math.max(0,remainOf(c.plan))):''})));
+  return '\ufeff'+out.map(function(r){return r.map(repEscapeCsv).join(',')}).join('\r\n');
+}
+function repMsg(msg,bad){
+  var el=$('#repMsg');
+  if(el){el.textContent=msg;el.style.color=bad?'#eab5a5':'var(--brass-2)'}
+  toast(msg);
+}
+function renderAll(){syncPresets();renderTop();renderTickets();renderPicks();renderPacks();renderPreview();renderLogs();renderWeight();renderAnalytics();renderReport();updateWeightHint();renderStorage();renderVer()}
 
 /* ---------- sheet ---------- */
 function openSheet(html){
@@ -1319,6 +1438,29 @@ function bind(){
   });
   $('#sheetWrap').addEventListener('click',function(e){if(e.target===$('#sheetWrap'))closeSheet()});
   document.addEventListener('keydown',function(e){if(e.key==='Escape')closeSheet()});
+
+  $('#btnRepCsv').addEventListener('click',function(){
+    var m=reportModel();
+    if(!m.rows.length){toast('まだ記録がないため、実績表は空です');return}
+    var data=reportCsv(),name='実績表_'+todayISO()+'.csv';
+    try{
+      var blob=new Blob([data],{type:'text/csv;charset=utf-8'});
+      var a=document.createElement('a');
+      a.href=URL.createObjectURL(blob);a.download=name;
+      document.body.appendChild(a);a.click();
+      setTimeout(function(){URL.revokeObjectURL(a.href);a.remove()},1500);
+      repMsg('ダウンロードに保存しました（'+name+'）。ExcelやGoogleスプレッドシートで開けます。');
+    }catch(err){
+      repMsg('この環境では保存できませんでした。「印刷／PDFに保存」をお使いください。',true);
+    }
+  });
+  $('#btnRepPrint').addEventListener('click',function(){
+    var m=reportModel();
+    if(!m.rows.length){toast('まだ記録がないため、実績表は空です');return}
+    var pa=$('#printArea');
+    if(pa)pa.innerHTML='<h1>実績表　'+fmt(todayISO())+'　｜　回数台帳</h1>'+$('#repBox').innerHTML;
+    setTimeout(function(){window.print()},80);
+  });
 
   $('#btnAddPlan').addEventListener('click',function(){planSheet(null)});
 
@@ -1534,5 +1676,6 @@ renderAll();
 $('#recDate').value=todayISO();
 })();
 </script>
+<div id="printArea"></div>
 </body>
 </html>
