@@ -273,88 +273,26 @@ table.rep__t{border-collapse:collapse;font-size:11px;min-width:100%}
 .rep__t .rep__mark{color:#fbf3e4;font-weight:600;font-size:12.5px}
 .rep__t .rep__rem{background:rgba(201,162,77,.16);font-family:var(--font-m);color:#fbf3e4;font-weight:600}
 @media print{
-  @page{size:A4 landscape;margin:8mm}
+  @page{size:A4 landscape;margin:6mm}
   body>*{display:none!important}
   #printArea{display:block!important;color:#000}
-  #printArea h1{font-size:12pt;margin:0 0 4mm;font-weight:600}
+  #printArea h1{font-size:11pt;margin:0 0 3mm;font-weight:600}
   #printArea .rep__scroll{overflow:visible;border:0;border-radius:0;background:none}
-  #printArea table.rep__t{width:100%;font-size:7.5pt;border-collapse:collapse;min-width:0}
-  #printArea table.rep__t th,#printArea table.rep__t td{border:1px solid #666;padding:1px 3px;color:#000!important;background:#fff!important;white-space:normal;text-align:center}
-  #printArea table.rep__t thead tr:first-child th,#printArea table.rep__t thead tr:last-child th{background:#eee!important;font-weight:700}
+  #printArea table.rep__t{width:100%;table-layout:fixed;font-size:6.6pt;border-collapse:collapse;min-width:0}
+  #printArea table.rep__t th,#printArea table.rep__t td{
+    border:1px solid #666;padding:1px 2px;color:#000!important;background:#fff!important;
+    line-height:1.15;white-space:normal;word-break:break-word;text-align:center;overflow:hidden}
+  #printArea table.rep__t thead th{background:#eee!important;font-weight:700;vertical-align:bottom}
+  #printArea table.rep__t thead tr:first-child th{font-size:6.4pt}
+  #printArea table.rep__t tbody th{background:#f7f7f7!important;font-weight:400;font-size:6.4pt}
+  #printArea table.rep__t .rep__mark{font-weight:700}
   #printArea table.rep__t .rep__rem{background:#f0ead9!important;font-weight:700}
+  #printArea table.rep__t thead{display:table-header-group}
+  #printArea table.rep__t tr{break-inside:avoid}
+  #printArea table.rep__t.rep__tight thead th.rep__grp--one,
+  #printArea table.rep__t.rep__tight thead tr:nth-child(2) th{
+    writing-mode:vertical-rl;text-orientation:mixed;height:132px;font-size:6.4pt;padding:2px 0}
 }
-.an-note{font-size:11px;color:var(--mute);margin:9px 0 0;line-height:1.7}
-.an-warn{color:var(--vermilion);font-weight:700}
-.log__weight{display:inline-block;margin:9px 0 0;font-family:var(--font-m);font-size:11.5px;color:var(--sumi-2);background:rgba(255,255,255,.55);border-radius:99px;padding:3px 10px}
-.log__only{color:var(--mute)}
-.wcard{border:1px solid rgba(201,162,77,.3);border-radius:var(--r-md);background:rgba(255,255,255,.035);padding:13px;margin-bottom:16px}
-.wcard__k{font-size:10.5px;letter-spacing:.12em;color:var(--mute);display:block;margin-bottom:7px}
-.wcard__top{display:flex;align-items:flex-end;justify-content:space-between;gap:10px;flex-wrap:wrap}
-.wcard__v{font-family:var(--font-m);font-size:30px;font-weight:600;color:#fbf3e4;line-height:1}
-.wcard__v small{font-family:var(--font-b);font-size:11px;color:var(--mute);margin-left:3px}
-.wcard__d{font-family:var(--font-m);font-size:11.5px;color:var(--brass-2);line-height:1.6;text-align:right}
-.wcard svg{display:block;width:100%;height:54px;margin-top:12px;overflow:visible}
-.wcard__list{margin:12px 0 0;padding:0;list-style:none;font-family:var(--font-m);font-size:11.5px;color:var(--paper);line-height:1.9}
-.wcard__list li{display:flex;justify-content:space-between;gap:10px;border-top:1px solid rgba(201,162,77,.14);padding:4px 0}
-.wcard__list li:first-child{border-top:0}
-.wcard__list li span:last-child{color:var(--brass-2)}
-
-/* ---------- settings ---------- */
-.card{border:1px solid rgba(201,162,77,.26);border-radius:var(--r-md);padding:14px;margin-bottom:12px;background:rgba(255,255,255,.03)}
-.card h3{margin:0 0 6px;font-family:var(--font-d);font-size:13.5px;letter-spacing:.07em;color:#f0e5d3}
-.card p{margin:0 0 11px;font-size:12px;line-height:1.7;color:var(--mute)}
-.card .stack{display:grid;gap:8px}
-.mono-box{
-  width:100%;font-family:var(--font-m);font-size:11px;line-height:1.6;min-height:96px;
-  background:#120f0c;color:#d9cbb2;border:1px solid rgba(201,162,77,.3);border-radius:var(--r-sm);padding:10px;resize:vertical;
-}
-
-/* ---------- tabbar ---------- */
-.tabbar{
-  position:fixed;left:0;right:0;bottom:0;z-index:40;
-  display:flex;justify-content:center;gap:2px;
-  padding:8px 8px calc(8px + env(safe-area-inset-bottom));
-  background:linear-gradient(0deg,rgba(18,15,12,.99) 70%,rgba(18,15,12,.82));
-  border-top:1px solid rgba(201,162,77,.22);
-  backdrop-filter:blur(8px);
-}
-.tab{
-  flex:1 1 0;max-width:110px;background:transparent;border:0;cursor:pointer;
-  display:flex;flex-direction:column;align-items:center;gap:4px;
-  padding:6px 2px;color:var(--mute);font-family:var(--font-b);font-size:10.5px;letter-spacing:.06em;
-}
-.tab svg{width:21px;height:21px;stroke:currentColor;fill:none;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
-.tab[aria-selected=true]{color:var(--brass-2)}
-.tab[aria-selected=true] .tab__dot{opacity:1}
-.tab__dot{width:4px;height:4px;border-radius:50%;background:var(--brass-2);opacity:0}
-
-/* ---------- sheet ---------- */
-.sheet-wrap{position:fixed;inset:0;z-index:60;display:none;background:rgba(8,6,5,.66);backdrop-filter:blur(3px)}
-.sheet-wrap.is-open{display:block}
-.sheet{
-  position:absolute;left:0;right:0;bottom:0;max-width:460px;margin:0 auto;
-  background:var(--ink-2);border-radius:22px 22px 0 0;border-top:1px solid rgba(201,162,77,.35);
-  padding:16px 16px calc(20px + env(safe-area-inset-bottom));
-  max-height:92vh;overflow-y:auto;
-  animation:rise .26s cubic-bezier(.2,.8,.3,1);
-  overscroll-behavior:contain;
-}
-@keyframes rise{from{transform:translateY(22px);opacity:.6}to{transform:none;opacity:1}}
-.sheet__grip{width:38px;height:4px;border-radius:99px;background:rgba(255,255,255,.22);margin:0 auto 14px}
-.sheet h2{margin:0 0 14px;font-family:var(--font-d);font-size:16px;letter-spacing:.06em;color:#fbf3e4}
-.sheet__acts{display:grid;grid-template-columns:1fr 1.4fr;gap:9px;margin-top:6px}
-
-/* ---------- toast ---------- */
-.toast{
-  position:fixed;left:50%;bottom:calc(96px + env(safe-area-inset-bottom));transform:translate(-50%,14px);
-  z-index:80;background:var(--paper);color:var(--sumi);font-size:13px;font-weight:700;
-  padding:11px 18px;border-radius:99px;box-shadow:0 12px 30px -10px rgba(0,0,0,.9);
-  opacity:0;pointer-events:none;transition:opacity .22s,transform .22s;max-width:88vw;text-align:center;
-}
-.toast.is-on{opacity:1;transform:translate(-50%,0)}
-.view{display:none}
-.view.is-on{display:block}
-@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 </style>
 </head>
 <body>
@@ -483,6 +421,7 @@ table.rep__t{border-collapse:collapse;font-size:11px;min-width:100%}
         <button class="btn btn--ghost" id="btnRepCsv" type="button">Excel用CSVで書き出す</button>
         <button class="btn btn--ghost" id="btnRepPrint" type="button">印刷／PDFに保存</button>
       </div>
+      <p class="hint">印刷画面が縦向きで開いたら、用紙の向きを「横向き」に変えてください（メニューが多いほど横長が読みやすくなります）。</p>
       <p class="hint" id="repMsg">—</p>
     </div>
   </section>
@@ -591,7 +530,7 @@ table.rep__t{border-collapse:collapse;font-size:11px;min-width:100%}
 (function(){
 'use strict';
 var KEY='kaitoroku-v1';
-var APP_VER='2.2';
+var APP_VER='2.3';
 var APP_VER_DATE='2026-09-26';
 var $=function(s){return document.querySelector(s)};
 var plans=[],logs=[],draft={},packSel={},storageOK=true,jsonVisible=false;
@@ -1198,27 +1137,42 @@ function renderReport(){
     box.innerHTML='<p class="hint" style="padding:12px;margin:0">まだ記録がないため、実績表は空です。「記録」タブで来店を保存すると、ここに来店×メニューの表が出ます。</p>';
     return;
   }
-  var h='<table class="rep__t"><thead>'+
-    '<tr><th colspan="4">契約</th>'+
-      m.groups.map(function(g){return '<th colspan="'+g.names.length+'">'+esc(g.plan.name)+'</th>'}).join('')+'</tr>'+
-    '<tr><th>月</th><th>回</th><th>施術日</th><th>消化</th>'+
-      m.cols.map(function(c){return '<th>'+esc(c.name)+'</th>'}).join('')+'</tr>'+
-    '</thead><tbody>'+
+  var multi=m.groups.filter(function(g){return g.names.length>1});
+  var two=multi.length?2:1;
+  var tight=m.cols.length>14;
+  var head1='<th rowspan="'+two+'">月</th><th rowspan="'+two+'">回</th>'+
+    '<th rowspan="'+two+'">施術日</th><th rowspan="'+two+'">消化</th>'+
+    m.groups.map(function(g){
+      return g.names.length>1
+        ? '<th colspan="'+g.names.length+'" class="rep__grp">'+esc(g.plan.name)+'</th>'
+        : '<th rowspan="'+two+'" class="rep__grp rep__grp--one">'+esc(g.plan.name)+'</th>';
+    }).join('');
+  var head2=multi.length?multi.map(function(g){
+    return g.names.map(function(n){return '<th>'+esc(n)+'</th>'}).join('');
+  }).join(''):'';
+  box.innerHTML='<table class="rep__t'+(tight?' rep__tight':'')+'">'+
+    '<colgroup><col style="width:7%"><col style="width:3.5%"><col style="width:8.5%"><col style="width:4%">'+
+      m.cols.map(function(){return '<col>'}).join('')+'</colgroup>'+
+    '<thead><tr>'+head1+'</tr>'+(head2?('<tr>'+head2+'</tr>'):'')+'</thead><tbody>'+
     m.rows.map(function(r){
       return '<tr><th>'+monthKey(r.date)+'</th><th>'+r.n+'</th><th>'+fmt(r.date)+'</th><th>'+r.qty+'</th>'+
         m.cols.map(function(c){return '<td'+(r.marks[c.key]?' class="rep__mark"':'')+'>'+(r.marks[c.key]?'○':'')+'</td>'}).join('')+'</tr>';
     }).join('')+
-    '<tr><th>残数</th><th></th><th></th><th></th>'+
+    '<tr><th class="rep__rem" colspan="4">残数</th>'+
       m.cols.map(function(c){return '<td class="rep__rem">'+(c.first?String(Math.max(0,remainOf(c.plan))):'')+'</td>'}).join('')+
     '</tr></tbody></table>';
-  box.innerHTML=h;
 }
 function reportCsv(){
   var m=reportModel(),out=[];
   var r1=['','','',''];
   m.groups.forEach(function(g){g.names.forEach(function(n,i){r1.push(i===0?g.plan.name:'')})});
   out.push(r1);
-  out.push(['月','回','施術日','消化'].concat(m.cols.map(function(c){return c.name})));
+  var r2=[];
+  m.groups.forEach(function(g){
+    if(g.names.length>1){g.names.forEach(function(n){r2.push(n)})}
+    else{r2.push('')}
+  });
+  out.push(['月','回','施術日','消化'].concat(r2));
   m.rows.forEach(function(r){
     out.push([monthKey(r.date),r.n,fmt(r.date),r.qty].concat(m.cols.map(function(c){return r.marks[c.key]?'○':''})));
   });
